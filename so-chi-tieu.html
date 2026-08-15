@@ -1,0 +1,1844 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0B6E4F">
+<title>Sổ Chi Tiêu</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#F7F5EF;
+  --surface:#FFFFFF;
+  --surface-2:#F0EDE4;
+  --text:#1A2E22;
+  --text-muted:#6E7A72;
+  --border:#E6E1D6;
+  --primary:#0B6E4F;
+  --primary-dark:#084F39;
+  --primary-light:#E4F1EC;
+  --gold:#C9A227;
+  --income:#1B8A5A;
+  --expense:#C8553D;
+  --expense-light:#F7E6E1;
+  --income-light:#E2F2EA;
+  --danger:#D64545;
+  --radius-lg:22px;
+  --radius-md:14px;
+  --radius-sm:10px;
+  --shadow:0 10px 30px -12px rgba(15,27,20,0.18);
+  --font-display:'Be Vietnam Pro',sans-serif;
+  --font-body:'Inter',sans-serif;
+}
+[data-theme="dark"]{
+  --bg:#0A0F0C;
+  --surface:#26362B;
+  --surface-2:#334A3C;
+  --text:#F2F0E8;
+  --text-muted:#9FB0A5;
+  --border:#4A6354;
+  --primary:#2FA47A;
+  --primary-dark:#1F7A5B;
+  --primary-light:#1C2E24;
+  --gold:#D9BB4C;
+  --income:#3AB07E;
+  --expense:#E68A6F;
+  --expense-light:#332721;
+  --income-light:#1A2B24;
+  --shadow:0 8px 24px -10px rgba(0,0,0,0.4);
+}
+[data-theme="dark"] .card,
+[data-theme="dark"] .tx-item,
+[data-theme="dark"] .budget-item,
+[data-theme="dark"] .settings-group,
+[data-theme="dark"] .chart-box,
+[data-theme="dark"] .summary-box,
+[data-theme="dark"] .sheet,
+[data-theme="dark"] .search-box input,
+[data-theme="dark"] .field input,
+[data-theme="dark"] .field select,
+[data-theme="dark"] .field textarea{
+  border:1px solid var(--border);
+}
+[data-theme="dark"] .chip{ border:1px solid var(--border); }
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+html,body{margin:0;padding:0;}
+body{
+  font-family:var(--font-body);
+  background:var(--surface-2);
+  color:var(--text);
+  display:flex;
+  justify-content:center;
+  min-height:100vh;
+}
+button{font-family:inherit;}
+.app{
+  width:100%;
+  max-width:480px;
+  min-height:100vh;
+  background:var(--bg);
+  position:relative;
+  display:flex;
+  flex-direction:column;
+  overflow-x:hidden;
+}
+@media (min-width:481px){
+  .app{ box-shadow:var(--shadow); margin:0 auto; }
+}
+::-webkit-scrollbar{width:0;height:0;}
+
+/* ---------- Top area ---------- */
+/* Bottom padding must clear BOTH the nav bar and the FAB above it
+   (FAB sits at bottom:74px and is 56px tall = 130px), otherwise the last
+   row or the "Xem thêm" button ends up unreachable underneath them. */
+.screen{ display:none; flex:1; padding-bottom:150px; animation:fadeIn .25s ease; }
+.screen.active{ display:block; }
+@keyframes fadeIn{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);} }
+
+.topbar{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:20px 20px 6px 20px;
+}
+.topbar h1{ font-family:var(--font-display); font-size:22px; font-weight:800; margin:0; }
+.icon-btn{
+  width:40px; height:40px; border-radius:50%; border:none; background:var(--surface);
+  display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--text);
+  box-shadow:0 2px 8px rgba(0,0,0,0.06);
+}
+.icon-btn svg{ width:20px; height:20px; }
+
+/* ---------- Hero balance card ---------- */
+.hero{
+  margin:14px 20px 18px 20px;
+  border-radius:var(--radius-lg);
+  background:linear-gradient(135deg, var(--primary-dark), var(--primary) 65%);
+  color:#F5F1E4;
+  padding:24px 22px 20px 22px;
+  position:relative;
+  overflow:hidden;
+}
+.hero::before{
+  content:"";
+  position:absolute; right:-40px; top:-60px; width:180px; height:180px;
+  border-radius:50%; background:rgba(255,255,255,0.07);
+}
+.hero::after{
+  content:"";
+  position:absolute; left:-30px; bottom:-70px; width:140px; height:140px;
+  border-radius:50%; background:rgba(255,255,255,0.05);
+}
+.hero-label{ font-size:13px; opacity:0.85; margin-bottom:4px; }
+.hero-balance{ font-family:var(--font-display); font-size:34px; font-weight:800; letter-spacing:-0.5px; position:relative; z-index:1;}
+.hero-divider{ height:1px; background:rgba(245,241,228,0.22); margin:16px 0 14px 0; }
+.hero-stats{ display:flex; gap:14px; position:relative; z-index:1; }
+.hero-stat{ flex:1; }
+.hero-stat .lbl{ font-size:12px; opacity:0.8; display:flex; align-items:center; gap:6px; margin-bottom:3px;}
+.hero-stat .val{ font-size:17px; font-weight:700; font-family:var(--font-display); }
+.dot{ width:7px; height:7px; border-radius:50%; display:inline-block; }
+.dot.in{ background:#8FE3B8; }
+.dot.out{ background:#F3B39A; }
+
+/* ---------- Section titles ---------- */
+.section-head{ display:flex; align-items:center; justify-content:space-between; padding:0 20px; margin:18px 0 10px 0; }
+.section-head h2{ font-family:var(--font-display); font-size:16px; font-weight:700; margin:0; }
+.link-btn{ background:none; border:none; color:var(--primary); font-weight:600; font-size:13px; cursor:pointer; padding:0;}
+
+/* ---------- Category grid (donut legend) ---------- */
+.card{ background:var(--surface); border-radius:var(--radius-lg); margin:0 20px; padding:18px; box-shadow:var(--shadow); }
+.donut-wrap{ display:flex; align-items:center; gap:18px; }
+.donut-canvas-box{ width:120px; height:120px; flex-shrink:0; position:relative;}
+.donut-center{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+.donut-center span:first-child{ font-size:11px; color:var(--text-muted); }
+.donut-center span:last-child{ font-size:14px; font-weight:700; }
+.legend{ flex:1; display:flex; flex-direction:column; gap:8px; }
+.legend-row{ display:flex; align-items:center; gap:8px; font-size:12.5px; }
+.legend-row .sw{ width:9px; height:9px; border-radius:50%; flex-shrink:0; }
+.legend-row .nm{ flex:1; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.legend-row .pc{ font-weight:700; }
+.empty-hint{ text-align:center; color:var(--text-muted); font-size:13px; padding:14px 0; }
+
+/* ---------- Transaction list ---------- */
+.tx-list{ padding:0 20px; display:flex; flex-direction:column; gap:10px; }
+.tx-date-group{ margin-top:14px; display:flex; flex-direction:column; gap:10px; }
+.tx-date-label{ font-size:12px; color:var(--text-muted); font-weight:600; margin:0 0 8px 4px; text-transform:capitalize;}
+.tx-item{
+  background:var(--surface); border-radius:var(--radius-md); padding:12px 14px;
+  display:flex; align-items:center; gap:12px; cursor:pointer;
+  box-shadow:0 3px 10px rgba(15,27,20,0.05);
+}
+.tx-icon{ width:42px; height:42px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:19px; flex-shrink:0;}
+.tx-info{ flex:1; min-width:0; }
+.tx-info .cat{ font-weight:600; font-size:14px; }
+.tx-info .note{ font-size:12px; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.tx-amt{ font-weight:700; font-size:14px; white-space:nowrap; }
+.tx-amt.in{ color:var(--income); }
+.tx-amt.out{ color:var(--expense); }
+
+/* ---------- Filter bar ---------- */
+.filter-bar{ display:flex; gap:8px; padding:0 20px 4px 20px; overflow-x:auto; }
+.chip{
+  flex-shrink:0; padding:7px 14px; border-radius:999px; border:1px solid var(--border);
+  background:var(--surface); color:var(--text-muted); font-size:12.5px; font-weight:600; cursor:pointer;
+  white-space:nowrap;
+}
+.chip.active{ background:var(--primary); border-color:var(--primary); color:#fff; }
+.search-box{ margin:10px 20px 8px 20px; position:relative; }
+.search-box input{
+  width:100%; padding:12px 14px 12px 40px; border-radius:var(--radius-md); border:1px solid var(--border);
+  background:var(--surface); color:var(--text); font-size:14px; outline:none;
+}
+.search-box svg{ position:absolute; left:13px; top:50%; transform:translateY(-50%); width:16px; height:16px; color:var(--text-muted); }
+
+/* ---------- Budget screen ---------- */
+.budget-item{ background:var(--surface); border-radius:var(--radius-md); padding:14px 16px; margin:0 20px 12px 20px; box-shadow:0 3px 10px rgba(15,27,20,0.05); cursor:pointer; }
+.budget-top{ display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+.budget-top .nm{ flex:1; font-weight:600; font-size:14px; }
+.budget-top .amt{ font-size:12.5px; color:var(--text-muted); }
+.bar-track{ height:8px; border-radius:999px; background:var(--surface-2); overflow:hidden; }
+.bar-fill{ height:100%; border-radius:999px; background:var(--primary); transition:width .4s ease; }
+.bar-fill.warn{ background:var(--gold); }
+.bar-fill.over{ background:var(--danger); }
+.budget-foot{ display:flex; justify-content:space-between; margin-top:6px; font-size:11.5px; color:var(--text-muted); }
+
+/* ---------- Stats screen ---------- */
+.stat-tabs{ display:flex; gap:8px; padding:0 20px; margin-bottom:12px; }
+.stat-tabs .chip{ flex:1; text-align:center; }
+.chart-box{ background:var(--surface); border-radius:var(--radius-lg); margin:0 20px 16px 20px; padding:16px; box-shadow:var(--shadow); }
+.chart-box h3{ font-size:13px; font-weight:700; margin:0 0 12px 4px; color:var(--text-muted); }
+.chart-canvas-wrap{ position:relative; height:200px; }
+.summary-row{ display:flex; gap:10px; padding:0 20px; margin-bottom:16px; }
+.summary-box{ flex:1; background:var(--surface); border-radius:var(--radius-md); padding:14px; text-align:center; box-shadow:0 3px 10px rgba(15,27,20,0.05); }
+.summary-box .l{ font-size:11.5px; color:var(--text-muted); margin-bottom:4px; }
+.summary-box .v{ font-size:15px; font-weight:700; font-family:var(--font-display); }
+
+/* ---------- Settings ---------- */
+.settings-group{ background:var(--surface); border-radius:var(--radius-lg); margin:0 20px 16px 20px; box-shadow:var(--shadow); overflow:hidden; }
+.settings-row{ display:flex; align-items:center; gap:12px; padding:14px 16px; border-bottom:1px solid var(--border); cursor:pointer; }
+.settings-row:last-child{ border-bottom:none; }
+.settings-row .ico{ width:34px; height:34px; border-radius:10px; background:var(--primary-light); color:var(--primary); display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0;}
+.settings-row .lbl{ flex:1; font-size:14px; font-weight:500; }
+.settings-row .val{ font-size:12.5px; color:var(--text-muted); }
+.switch{ position:relative; width:42px; height:24px; background:var(--border); border-radius:999px; flex-shrink:0; transition:.2s;}
+.switch.on{ background:var(--primary); }
+.switch::after{ content:""; position:absolute; top:2px; left:2px; width:20px; height:20px; background:#fff; border-radius:50%; transition:.2s; box-shadow:0 1px 3px rgba(0,0,0,0.3);}
+.switch.on::after{ transform:translateX(18px); }
+
+.cat-manage-list{ display:flex; flex-wrap:wrap; gap:10px; padding:14px 16px; }
+.cat-manage-item{ display:flex; flex-direction:column; align-items:center; gap:5px; width:70px; cursor:pointer; }
+.cat-manage-item .ic{ width:54px; height:54px; border-radius:16px; display:flex; align-items:center; justify-content:center; font-size:25px; }
+.cat-manage-item span{ font-size:10.5px; text-align:center; color:var(--text-muted); line-height:1.2; }
+.cat-manage-item.add .ic{ background:var(--surface-2); border:1.5px dashed var(--border); color:var(--text-muted); }
+
+/* ---------- Bottom nav ---------- */
+.bottom-nav{
+  position:fixed; bottom:0; left:50%; transform:translateX(-50%);
+  width:100%; max-width:480px; background:var(--surface); border-top:1px solid var(--border);
+  display:flex; padding:8px 8px calc(8px + env(safe-area-inset-bottom)) 8px; z-index:40;
+}
+.nav-btn{
+  flex:1; background:none; border:none; display:flex; flex-direction:column; align-items:center; gap:3px;
+  color:var(--text-muted); font-size:10.5px; font-weight:600; padding:6px 0; cursor:pointer; font-family:var(--font-body);
+}
+.nav-btn svg{ width:21px; height:21px; }
+.nav-btn.active{ color:var(--primary); }
+
+/* ---------- FAB ---------- */
+.fab{
+  position:fixed; bottom:74px; left:50%; transform:translateX(-50%);
+  width:56px; height:56px; border-radius:50%; background:var(--primary); color:#fff; border:none;
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer; z-index:41; font-size:26px; line-height:1;
+}
+@media (min-width:481px){ .fab{ bottom:90px; } .bottom-nav{ bottom:0; } }
+
+/* ---------- Modal / bottom sheet ---------- */
+.overlay{ position:fixed; inset:0; background:rgba(10,15,12,0.5); z-index:50; display:none; }
+.overlay.show{ display:block; }
+.sheet{
+  position:fixed; left:50%; bottom:0; transform:translate(-50%,100%); width:100%; max-width:480px;
+  background:var(--surface); border-radius:24px 24px 0 0; z-index:51; max-height:92vh; overflow-y:auto;
+  transition:transform .28s cubic-bezier(.32,.72,0,1); padding-bottom:24px;
+  pointer-events:none;
+}
+/* The shadow must only exist while the sheet is open. A hidden sheet sits just
+   below the viewport but its upward shadow still bled into the visible strip —
+   five stacked sheets painted a dark band across the bottom, over the nav. */
+.sheet.show{ transform:translate(-50%,0); pointer-events:auto; box-shadow:0 -6px 24px rgba(0,0,0,0.2); }
+.sheet-handle{ width:38px; height:4px; background:var(--border); border-radius:999px; margin:10px auto 4px auto; }
+.sheet-head{ display:flex; align-items:center; justify-content:space-between; padding:8px 20px 14px 20px; }
+.sheet-head h3{ font-family:var(--font-display); font-size:17px; margin:0; }
+.sheet-body{ padding:0 20px; }
+
+.type-toggle{ display:flex; background:var(--surface-2); border-radius:999px; padding:4px; margin-bottom:16px; }
+.type-toggle button{ flex:1; border:none; background:none; padding:10px; border-radius:999px; font-weight:700; font-size:13.5px; color:var(--text-muted); cursor:pointer; }
+.type-toggle button.active.expense{ background:var(--expense); color:#fff; }
+.type-toggle button.active.income{ background:var(--income); color:#fff; }
+
+.amount-field{ text-align:center; margin-bottom:18px; }
+.amount-field input{
+  width:100%; border:none; background:none; text-align:center; font-family:var(--font-display); font-size:38px; font-weight:800;
+  color:var(--text); outline:none;
+}
+.amount-field .cur{ font-size:14px; color:var(--text-muted); font-weight:600; }
+
+.field{ margin-bottom:14px; }
+.field label{ font-size:12.5px; color:var(--text-muted); font-weight:600; display:block; margin-bottom:6px; }
+.field input[type=text], .field input[type=date], .field input[type=number], .field select, .field textarea{
+  width:100%; padding:12px 14px; border-radius:var(--radius-md); border:1px solid var(--border); background:var(--surface-2);
+  color:var(--text); font-size:14px; outline:none; font-family:inherit;
+}
+.field textarea{ resize:none; min-height:60px; }
+
+/* Fixed 2-row viewport (8 categories) with scroll for the rest:
+   keeps both tabs exactly the same height (no jump) without leaving a
+   large empty gap on the tab that has fewer categories. */
+.cat-picker{
+  display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:16px;
+  align-content:start; height:204px; overflow-y:auto; padding-right:4px;
+}
+.cat-picker::-webkit-scrollbar{ width:3px; }
+.cat-picker::-webkit-scrollbar-thumb{ background:var(--border); border-radius:99px; }
+.cat-pick-item{ display:flex; flex-direction:column; align-items:center; gap:5px; cursor:pointer; padding:6px 2px; border-radius:12px; }
+.cat-pick-item .ic{ width:66px; height:66px; border-radius:19px; display:flex; align-items:center; justify-content:center; font-size:32px; border:2px solid transparent; }
+.cat-pick-item.selected .ic{ border-color:var(--primary); }
+.cat-pick-item span{ font-size:11.5px; text-align:center; color:var(--text-muted); line-height:1.2; }
+
+.btn-primary{
+  width:100%; padding:15px; border-radius:var(--radius-md); border:none; background:var(--primary); color:#fff;
+  font-weight:700; font-size:15px; cursor:pointer; margin-top:6px;
+}
+.btn-danger{
+  width:100%; padding:14px; border-radius:var(--radius-md); border:none; background:var(--expense-light); color:var(--expense);
+  font-weight:700; font-size:14px; cursor:pointer; margin-top:10px;
+}
+.btn-secondary{
+  width:100%; padding:14px; border-radius:var(--radius-md); border:1px solid var(--border); background:var(--surface); color:var(--text);
+  font-weight:700; font-size:14px; cursor:pointer; margin-top:10px;
+}
+
+.recur-row{ display:flex; align-items:center; justify-content:space-between; padding:10px 2px; margin-bottom:6px; }
+.recur-row .t{ font-size:13.5px; font-weight:600; }
+.recur-row .s{ font-size:11.5px; color:var(--text-muted); }
+
+.toast{
+  position:fixed; bottom:150px; left:50%; transform:translateX(-50%); background:#1A2E22; color:#fff; padding:11px 20px;
+  border-radius:999px; font-size:13px; z-index:99; opacity:0; transition:opacity .25s, bottom .25s; pointer-events:none;
+}
+.toast.show{ opacity:1; bottom:170px; }
+
+.color-picker{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px; }
+.color-swatch{ width:30px; height:30px; border-radius:50%; cursor:pointer; border:3px solid transparent; }
+.color-swatch.selected{ border-color:var(--text); }
+.emoji-picker{ display:grid; grid-template-columns:repeat(7,1fr); gap:8px; margin-bottom:14px; max-height:150px; overflow-y:auto;}
+.emoji-picker span{ font-size:20px; text-align:center; padding:6px 0; border-radius:8px; cursor:pointer; }
+.emoji-picker span.selected{ background:var(--primary-light); }
+
+.range-toggle{ display:flex; gap:8px; margin-bottom:14px; }
+.range-toggle .chip{ flex:1; text-align:center; }
+
+.no-data{ text-align:center; padding:60px 30px; color:var(--text-muted); }
+.no-data .em{ font-size:40px; margin-bottom:10px; }
+.no-data p{ font-size:13.5px; line-height:1.5; margin:0; }
+
+/* ---------- Tap feedback ---------- */
+/* transform-only + short duration keeps this entirely on the GPU compositor
+   (no layout/paint work), and :active only ever matches the one element
+   actually being pressed — so this costs nothing even with 60+ rows on
+   screen. .fab already has its own transform (translateX, for centering),
+   so its :active has to repeat that alongside the scale instead of just
+   overriding it away. */
+.icon-btn, .link-btn, .tx-item, .chip, .settings-row, .cat-manage-item,
+.nav-btn, .type-toggle button, .cat-pick-item, .btn-primary, .btn-danger,
+.btn-secondary, .color-swatch, .emoji-picker span, .budget-item, .fab{
+  transition:transform .12s ease;
+}
+.icon-btn:active, .link-btn:active, .tx-item:active, .chip:active,
+.settings-row:active, .cat-manage-item:active, .nav-btn:active,
+.type-toggle button:active, .cat-pick-item:active, .btn-primary:active,
+.btn-danger:active, .btn-secondary:active, .color-swatch:active,
+.emoji-picker span:active, .budget-item:active{
+  transform:scale(.96);
+}
+.fab:active{ transform:translateX(-50%) scale(.94); }
+</style>
+</head>
+<body>
+<div class="app" id="app">
+
+  <!-- ============ DASHBOARD ============ -->
+  <section class="screen active" id="screen-dashboard">
+    <div class="topbar">
+      <h1>Xin chào 👋</h1>
+      <button class="icon-btn" onclick="toggleTheme()" id="themeBtnDash">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 0 1-4.4 2.26 5.403 5.403 0 0 1-3.14-9.8c-.44-.06-.9-.1-1.36-.1z"/></svg>
+      </button>
+    </div>
+
+    <div class="hero">
+      <div class="hero-label">Số dư hiện tại</div>
+      <div class="hero-balance" id="heroBalance">0 ₫</div>
+      <div class="hero-divider"></div>
+      <div class="hero-stats">
+        <div class="hero-stat">
+          <div class="lbl"><span class="dot in"></span> Thu nhập tháng này</div>
+          <div class="val" id="heroIncome">0 ₫</div>
+        </div>
+        <div class="hero-stat">
+          <div class="lbl"><span class="dot out"></span> Chi tiêu tháng này</div>
+          <div class="val" id="heroExpense">0 ₫</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-head">
+      <h2>Chi tiêu theo danh mục</h2>
+      <button class="link-btn" onclick="goScreen('stats')">Xem thêm</button>
+    </div>
+    <div class="card">
+      <div class="donut-wrap" id="dashDonutWrap">
+        <div class="donut-canvas-box">
+          <canvas id="dashDonut"></canvas>
+          <div class="donut-center"><span>Tổng chi</span><span id="donutCenterVal">0 ₫</span></div>
+        </div>
+        <div class="legend" id="dashLegend"></div>
+      </div>
+    </div>
+
+    <div class="section-head">
+      <h2>Giao dịch gần đây</h2>
+      <button class="link-btn" onclick="goScreen('transactions')">Tất cả</button>
+    </div>
+    <div class="tx-list" id="recentTxList"></div>
+  </section>
+
+  <!-- ============ TRANSACTIONS ============ -->
+  <section class="screen" id="screen-transactions">
+    <div class="topbar"><h1>Giao dịch</h1></div>
+    <div class="search-box">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+      <input type="text" id="searchInput" placeholder="Tìm theo ghi chú, danh mục..." oninput="renderTransactionsScreen()">
+    </div>
+    <div class="filter-bar" id="typeFilterBar">
+      <button class="chip active" data-f="all" onclick="setTypeFilter('all')">Tất cả</button>
+      <button class="chip" data-f="income" onclick="setTypeFilter('income')">Thu nhập</button>
+      <button class="chip" data-f="expense" onclick="setTypeFilter('expense')">Chi tiêu</button>
+    </div>
+    <div class="filter-bar" id="catFilterBar"></div>
+    <div class="tx-list" id="fullTxList" style="margin-top:6px;"></div>
+  </section>
+
+  <!-- ============ BUDGET ============ -->
+  <section class="screen" id="screen-budget">
+    <div class="topbar"><h1>Ngân sách</h1></div>
+    <p style="padding:0 20px; margin:0 0 14px 0; font-size:13px; color:var(--text-muted); line-height:1.5;">
+      Đặt hạn mức chi tiêu mỗi tháng cho từng danh mục (ví dụ: Ăn uống tối đa 3.000.000đ/tháng). App sẽ tự cộng dồn chi tiêu thực tế và cảnh báo khi bạn sắp hoặc đã vượt mức.
+    </p>
+    <div class="summary-row">
+      <div class="summary-box"><div class="l">Tổng ngân sách</div><div class="v" id="budgetTotalPlan">0 ₫</div></div>
+      <div class="summary-box"><div class="l">Đã chi</div><div class="v" id="budgetTotalSpent">0 ₫</div></div>
+    </div>
+    <div id="budgetList"></div>
+  </section>
+
+  <!-- ============ STATS ============ -->
+  <section class="screen" id="screen-stats">
+    <div class="topbar"><h1>Thống kê</h1></div>
+    <div class="stat-tabs">
+      <button class="chip active" data-p="month" onclick="setStatPeriod('month')">Tháng này</button>
+      <button class="chip" data-p="6m" onclick="setStatPeriod('6m')">6 tháng</button>
+      <button class="chip" data-p="year" onclick="setStatPeriod('year')">Năm nay</button>
+      <button class="chip" data-p="custom" onclick="setStatPeriod('custom')">Tùy chỉnh</button>
+    </div>
+    <div class="chart-box" id="customRangeBox" style="display:none; padding:14px 16px;">
+      <div style="display:flex; gap:10px;">
+        <div class="field" style="flex:1; margin-bottom:0;">
+          <label>Từ ngày</label>
+          <input type="date" id="statCustomStart" onchange="applyCustomRange()">
+        </div>
+        <div class="field" style="flex:1; margin-bottom:0;">
+          <label>Đến ngày</label>
+          <input type="date" id="statCustomEnd" onchange="applyCustomRange()">
+        </div>
+      </div>
+    </div>
+    <div class="summary-row">
+      <div class="summary-box"><div class="l">Thu nhập</div><div class="v" id="statIncome" style="color:var(--income)">0 ₫</div></div>
+      <div class="summary-box"><div class="l">Chi tiêu</div><div class="v" id="statExpense" style="color:var(--expense)">0 ₫</div></div>
+    </div>
+    <div class="chart-box">
+      <h3>Thu chi theo thời gian</h3>
+      <div class="chart-canvas-wrap"><canvas id="trendChart"></canvas></div>
+    </div>
+    <div class="chart-box">
+      <h3>Phân bổ chi tiêu theo danh mục</h3>
+      <div class="chart-canvas-wrap"><canvas id="statDonut"></canvas></div>
+    </div>
+  </section>
+
+  <!-- ============ SETTINGS ============ -->
+  <section class="screen" id="screen-settings">
+    <div class="topbar"><h1>Cài đặt</h1></div>
+
+    <div class="section-head"><h2>Giao diện</h2></div>
+    <div class="settings-group">
+      <div class="settings-row" onclick="toggleTheme()">
+        <div class="ico">🌙</div>
+        <div class="lbl">Chế độ tối</div>
+        <div class="switch" id="darkSwitch"></div>
+      </div>
+    </div>
+
+    <div class="section-head"><h2>Số dư</h2></div>
+    <div class="settings-group">
+      <div class="settings-row" onclick="openOpeningBalanceModal()">
+        <div class="ico">🏦</div>
+        <div class="lbl">Số dư ban đầu</div>
+        <div class="val" id="openingBalanceVal">0 ₫</div>
+      </div>
+    </div>
+
+    <div class="section-head"><h2>Giao dịch định kỳ</h2></div>
+    <div class="settings-group" id="recurringGroup"></div>
+
+    <div class="section-head">
+      <h2>Danh mục chi tiêu</h2>
+      <button class="link-btn" onclick="openReorderSheet()">Sắp xếp</button>
+    </div>
+    <div class="settings-group">
+      <div class="cat-manage-list" id="catManageExpense"></div>
+    </div>
+    <div class="section-head"><h2>Danh mục thu nhập</h2></div>
+    <div class="settings-group">
+      <div class="cat-manage-list" id="catManageIncome"></div>
+    </div>
+
+    <div class="section-head"><h2>Dữ liệu</h2></div>
+    <div class="settings-group">
+      <div class="settings-row" onclick="exportData('json')">
+        <div class="ico">⬇️</div><div class="lbl">Xuất dữ liệu (JSON)</div>
+      </div>
+      <div class="settings-row" onclick="exportData('csv')">
+        <div class="ico">📄</div><div class="lbl">Xuất dữ liệu (CSV)</div>
+      </div>
+      <div class="settings-row" onclick="document.getElementById('importFile').click()">
+        <div class="ico">⬆️</div><div class="lbl">Nhập dữ liệu (JSON)</div>
+      </div>
+      <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+      <div class="settings-row" onclick="confirmReset()">
+        <div class="ico" style="background:var(--expense-light); color:var(--expense);">🗑️</div>
+        <div class="lbl" style="color:var(--expense);">Xóa toàn bộ dữ liệu</div>
+      </div>
+    </div>
+
+    <div class="section-head"><h2>Cài app lên máy</h2></div>
+    <div class="settings-group">
+      <div class="settings-row" onclick="showInstallHint()">
+        <div class="ico">📲</div>
+        <div class="lbl">Thêm vào Màn hình chính</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ BOTTOM NAV ============ -->
+  <nav class="bottom-nav">
+    <button class="nav-btn active" data-s="dashboard" onclick="goScreen('dashboard')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12 12 3l9 9"/><path d="M5 10v10h14V10"/></svg>
+      Tổng quan
+    </button>
+    <button class="nav-btn" data-s="transactions" onclick="goScreen('transactions')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+      Giao dịch
+    </button>
+    <button class="nav-btn" data-s="budget" onclick="goScreen('budget')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+      Ngân sách
+    </button>
+    <button class="nav-btn" data-s="stats" onclick="goScreen('stats')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10M12 20V4M20 20v-7"/></svg>
+      Thống kê
+    </button>
+    <button class="nav-btn" data-s="settings" onclick="goScreen('settings')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      Cài đặt
+    </button>
+  </nav>
+
+  <button class="fab" onclick="openTxModal()">+</button>
+
+  <!-- ============ OVERLAY ============ -->
+  <div class="overlay" id="overlay" onclick="closeAllSheets()"></div>
+
+  <!-- ============ TRANSACTION SHEET ============ -->
+  <div class="sheet" id="txSheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-head">
+      <h3 id="txSheetTitle">Thêm giao dịch</h3>
+      <button class="icon-btn" onclick="closeAllSheets()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="sheet-body">
+      <div class="type-toggle">
+        <button id="typeBtnExpense" class="active expense" onclick="setTxType('expense')">Chi tiêu</button>
+        <button id="typeBtnIncome" class="income" onclick="setTxType('income')">Thu nhập</button>
+      </div>
+      <div class="amount-field">
+        <input type="text" inputmode="numeric" id="txAmount" placeholder="0" oninput="formatAmountInput(this)">
+        <div class="cur">VNĐ</div>
+      </div>
+      <div class="field"><label>Danh mục</label></div>
+      <div class="cat-picker" id="txCatPicker"></div>
+      <div class="field"><label>Ngày</label><input type="date" id="txDate"></div>
+      <div class="field"><label>Ghi chú (không bắt buộc)</label><textarea id="txNote" placeholder="Ví dụ: Ăn trưa với đồng nghiệp"></textarea></div>
+      <div id="recurSection">
+        <div class="recur-row">
+          <div><div class="t">Giao dịch định kỳ</div><div class="s">Tự động tạo lại theo chu kỳ</div></div>
+          <div class="switch" id="recurSwitch" onclick="toggleRecur()"></div>
+        </div>
+        <div id="recurExtra" style="display:none">
+          <div class="field"><label>Lặp lại</label>
+            <select id="txRecurFreq">
+              <option value="daily">Hàng ngày</option>
+              <option value="weekly">Hàng tuần</option>
+              <option value="monthly" selected>Hàng tháng</option>
+              <option value="yearly">Hàng năm</option>
+            </select>
+          </div>
+          <div class="field"><label>Kết thúc (không bắt buộc)</label><input type="date" id="txRecurEnd"></div>
+        </div>
+      </div>
+      <button class="btn-primary" onclick="saveTx()">Lưu giao dịch</button>
+      <button class="btn-danger" id="deleteTxBtn" style="display:none" onclick="deleteTx()">Xóa giao dịch</button>
+    </div>
+  </div>
+
+  <!-- ============ CATEGORY SHEET ============ -->
+  <div class="sheet" id="catSheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-head">
+      <h3 id="catSheetTitle">Danh mục mới</h3>
+      <button class="icon-btn" onclick="closeAllSheets()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="sheet-body">
+      <div class="type-toggle">
+        <button id="catTypeBtnExpense" class="active expense" onclick="setCatType('expense')">Chi tiêu</button>
+        <button id="catTypeBtnIncome" class="income" onclick="setCatType('income')">Thu nhập</button>
+      </div>
+      <div class="field"><label>Tên danh mục</label><input type="text" id="catName" placeholder="Ví dụ: Du lịch"></div>
+      <div class="field"><label>Biểu tượng</label></div>
+      <div class="emoji-picker" id="emojiPicker"></div>
+      <div class="field"><label>Màu sắc</label></div>
+      <div class="color-picker" id="colorPicker"></div>
+      <button class="btn-primary" onclick="saveCategory()">Lưu danh mục</button>
+      <button class="btn-danger" id="deleteCatBtn" style="display:none" onclick="deleteCategory()">Xóa danh mục</button>
+    </div>
+  </div>
+
+  <!-- ============ BUDGET EDIT SHEET ============ -->
+  <div class="sheet" id="budgetSheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-head">
+      <h3 id="budgetSheetTitle">Đặt ngân sách</h3>
+      <button class="icon-btn" onclick="closeAllSheets()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="sheet-body">
+      <div class="amount-field">
+        <input type="text" inputmode="numeric" id="budgetAmount" placeholder="0" oninput="formatAmountInput(this)">
+        <div class="cur">VNĐ / tháng</div>
+      </div>
+      <button class="btn-primary" onclick="saveBudget()">Lưu ngân sách</button>
+      <button class="btn-danger" id="deleteBudgetBtn" style="display:none" onclick="removeBudget()">Xóa ngân sách</button>
+    </div>
+  </div>
+
+  <!-- ============ OPENING BALANCE SHEET ============ -->
+  <div class="sheet" id="openBalSheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-head">
+      <h3>Số dư ban đầu</h3>
+      <button class="icon-btn" onclick="closeAllSheets()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="sheet-body">
+      <p style="font-size:12.5px;color:var(--text-muted);margin-top:0;">Số tiền bạn đang có (tiền mặt + tài khoản) tính đến trước khi bắt đầu ghi chép trên app này.</p>
+      <div class="amount-field">
+        <input type="text" inputmode="numeric" id="openBalAmount" placeholder="0" oninput="formatAmountInput(this)">
+        <div class="cur">VNĐ</div>
+      </div>
+      <button class="btn-primary" onclick="saveOpeningBalance()">Lưu số dư ban đầu</button>
+    </div>
+  </div>
+
+  <!-- ============ REORDER CATEGORIES SHEET ============ -->
+  <div class="sheet" id="reorderSheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-head">
+      <h3>Sắp xếp danh mục</h3>
+      <button class="icon-btn" onclick="closeAllSheets()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="sheet-body">
+      <p style="font-size:12.5px;color:var(--text-muted);margin-top:0;">Dùng mũi tên để đổi vị trí. Thứ tự này áp dụng khi bạn chọn danh mục lúc thêm giao dịch.</p>
+      <div class="type-toggle">
+        <button id="reorderTabExpense" class="active expense" onclick="setReorderType('expense')">Chi tiêu</button>
+        <button id="reorderTabIncome" class="income" onclick="setReorderType('income')">Thu nhập</button>
+      </div>
+      <div id="reorderList"></div>
+    </div>
+  </div>
+
+  <!-- ============ INSTALL HINT SHEET ============ -->
+  <div class="sheet" id="installSheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-head"><h3>Cài đặt lên máy</h3>
+      <button class="icon-btn" onclick="closeAllSheets()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="sheet-body" style="font-size:13.5px; line-height:1.7; color:var(--text-muted);" id="installSheetContent"></div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+/* ================= DATA LAYER ================= */
+const STORAGE_KEYS = { tx:'qlct_transactions', cat:'qlct_categories', budget:'qlct_budgets', settings:'qlct_settings', recur:'qlct_recurring' };
+
+const DEFAULT_CATEGORIES = [
+  {id:'c_food', name:'Ăn uống', icon:'🍜', color:'#C8553D', type:'expense'},
+  {id:'c_transport', name:'Di chuyển', icon:'🚗', color:'#3B6EA5', type:'expense'},
+  {id:'c_shopping', name:'Mua sắm', icon:'🛍️', color:'#9B59B6', type:'expense'},
+  {id:'c_bill', name:'Hóa đơn', icon:'💡', color:'#D4A017', type:'expense'},
+  {id:'c_fun', name:'Giải trí', icon:'🎬', color:'#E67E22', type:'expense'},
+  {id:'c_health', name:'Sức khỏe', icon:'💊', color:'#16A085', type:'expense'},
+  {id:'c_edu', name:'Giáo dục', icon:'📚', color:'#2980B9', type:'expense'},
+  {id:'c_home', name:'Nhà cửa', icon:'🏠', color:'#8E5B3F', type:'expense'},
+  {id:'c_other_e', name:'Khác', icon:'📦', color:'#7F8C8D', type:'expense'},
+  {id:'c_salary', name:'Lương', icon:'💼', color:'#1B8A5A', type:'income'},
+  {id:'c_bonus', name:'Thưởng', icon:'🎁', color:'#C9A227', type:'income'},
+  {id:'c_invest', name:'Đầu tư', icon:'📈', color:'#2E86AB', type:'income'},
+  {id:'c_other_i', name:'Khác', icon:'💰', color:'#7F8C8D', type:'income'},
+];
+
+const EMOJI_OPTIONS = ['🍜','🚗','🛍️','💡','🎬','💊','📚','🏠','📦','💼','🎁','📈','💰','☕','✈️','🎮','👕','🐶','🎵','📱','🏋️','🎓','🧾','🍺','🚕','🏥','🎨','🛠️'];
+const COLOR_OPTIONS = ['#C8553D','#3B6EA5','#9B59B6','#D4A017','#E67E22','#16A085','#2980B9','#8E5B3F','#7F8C8D','#1B8A5A','#C9A227','#2E86AB','#D64545','#0B6E4F'];
+
+function loadJSON(key, fallback){
+  try{ const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; }catch(e){ return fallback; }
+}
+function saveJSON(key, val){ try{ localStorage.setItem(key, JSON.stringify(val)); return true; }catch(e){ return false; } }
+
+let transactions = loadJSON(STORAGE_KEYS.tx, []);
+// Deep-clone the fallback: on a fresh install (nothing in localStorage yet),
+// loadJSON hands back this exact fallback reference. Without the clone,
+// `categories` and DEFAULT_CATEGORIES would be the SAME array/objects, so
+// editing or reordering a default category (Object.assign / array swap, both
+// in-place mutations) permanently corrupts DEFAULT_CATEGORIES for the rest of
+// the session — making confirmReset()'s "restore to defaults" restore the
+// user's edited version instead of the real originals.
+let categories = loadJSON(STORAGE_KEYS.cat, JSON.parse(JSON.stringify(DEFAULT_CATEGORIES)));
+let budgets = loadJSON(STORAGE_KEYS.budget, {});
+let settings = loadJSON(STORAGE_KEYS.settings, {theme:'light', openingBalance:0});
+if(settings.openingBalance === undefined) settings.openingBalance = 0;
+let recurringRules = loadJSON(STORAGE_KEYS.recur, []);
+
+function persistAll(){
+  const okTx = saveJSON(STORAGE_KEYS.tx, transactions);
+  const okCat = saveJSON(STORAGE_KEYS.cat, categories);
+  const okBudget = saveJSON(STORAGE_KEYS.budget, budgets);
+  const okSettings = saveJSON(STORAGE_KEYS.settings, settings);
+  const okRecur = saveJSON(STORAGE_KEYS.recur, recurringRules);
+  return okTx && okCat && okBudget && okSettings && okRecur;
+}
+// Every user-facing "saved" action should go through this instead of calling
+// persistAll() + showToast(msg) directly — if localStorage is full or blocked
+// (e.g. strict private-browsing mode), saveJSON() fails silently, and without
+// this the app would still tell the user their change was saved when it wasn't.
+function persistAndToast(successMsg){
+  showToast(persistAll() ? successMsg : '⚠️ Không lưu được: bộ nhớ trình duyệt đầy hoặc bị chặn');
+}
+
+/* ================= RECURRING TRANSACTIONS =================
+   Business logic (matches common apps like Money Lover / Money Manager):
+   - A recurring rule is stored separately from transactions.
+   - The transaction the user creates at setup time IS the first occurrence.
+   - Every time the app opens, we "catch up": generate any occurrence whose
+     due date is on or before today and hasn't been generated yet. We never
+     generate future-dated transactions ahead of time.
+   - Monthly/yearly rules that land on a day that doesn't exist in the target
+     month (e.g. 31st) clamp to the last valid day of that month, matching
+     how Money Manager / most calendar-based finance apps behave.
+   - Stopping a rule keeps all transactions already generated; it just stops
+     future generation. Editing a rule only affects future occurrences.
+*/
+function daysInMonth(year, monthIdx){ return new Date(year, monthIdx+1, 0).getDate(); }
+// Always computes the Nth occurrence from the rule's ORIGINAL anchor date, never
+// chaining off a previously-clamped date. This is what keeps "31st every month"
+// landing on Feb 28, then correctly back on Mar 31 (not stuck at 28 forever).
+function occurrenceDate(anchorDateStr, freq, n){
+  const a = parseYMD(anchorDateStr);
+  if(freq === 'daily'){
+    const d = new Date(a); d.setDate(d.getDate() + n);
+    return ymd(d);
+  }
+  if(freq === 'weekly'){
+    const d = new Date(a); d.setDate(d.getDate() + 7*n);
+    return ymd(d);
+  }
+  if(freq === 'yearly'){
+    const targetYear = a.getFullYear() + n;
+    const day = Math.min(a.getDate(), daysInMonth(targetYear, a.getMonth()));
+    return ymd(new Date(targetYear, a.getMonth(), day));
+  }
+  // monthly (default)
+  const totalMonths = a.getMonth() + n;
+  const targetYear = a.getFullYear() + Math.floor(totalMonths/12);
+  const targetMonth = ((totalMonths % 12) + 12) % 12;
+  const day = Math.min(a.getDate(), daysInMonth(targetYear, targetMonth));
+  return ymd(new Date(targetYear, targetMonth, day));
+}
+function freqLabel(f){ return f==='daily' ? 'Hàng ngày' : f==='weekly' ? 'Hàng tuần' : f==='yearly' ? 'Hàng năm' : 'Hàng tháng'; }
+function generateDueRecurring(){
+  const todayStr = todayISO();
+  let changed = false;
+  recurringRules.forEach(rule=>{
+    if(!rule.active) return;
+    if(rule.nextIndex === undefined) rule.nextIndex = 1;
+    let guard = 0;
+    let next = occurrenceDate(rule.startDate, rule.frequency, rule.nextIndex);
+    while(next <= todayStr && (!rule.endDate || next <= rule.endDate) && guard < 500){
+      transactions.push({ id:uid(), type:rule.type, amount:rule.amount, categoryId:rule.categoryId, date:next, note:rule.note, recurring:true, recurringId:rule.id, createdAt:Date.now() });
+      rule.lastGeneratedDate = next;
+      rule.nextIndex++;
+      changed = true; guard++;
+      next = occurrenceDate(rule.startDate, rule.frequency, rule.nextIndex);
+    }
+    if(rule.endDate && next > rule.endDate) rule.active = false;
+  });
+  if(changed) persistAll();
+}
+
+function uid(){ return 'id_' + Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
+// All user-controlled strings (notes, category names, imported data) are
+// injected via innerHTML, so they must be escaped. Without this, importing a
+// crafted JSON file could run arbitrary JS and read the user's whole ledger.
+function esc(s){
+  return String(s==null?'':s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+function getCat(id){ return categories.find(c=>c.id===id) || {name:'Khác', icon:'❓', color:'#999', type:'expense'}; }
+// A category is "in use" if any transaction OR any still-active recurring rule
+// points at it. Letting either the type or the existence of such a category
+// change out from under that data doesn't update the data — it just makes it
+// silently vanish from type-filtered views (budget screen, tx filters) while
+// still existing (and still counted in totals) in storage.
+function isCategoryInUse(catId){
+  return transactions.some(t=>t.categoryId===catId) || recurringRules.some(r=>r.active && r.categoryId===catId);
+}
+function fmtVND(n){ n = Math.round(n||0); return n.toLocaleString('vi-VN') + ' ₫'; }
+// toISOString() converts to UTC, which in UTC+7 (Vietnam) shifts a local
+// midnight back to the PREVIOUS day. That made "next daily occurrence"
+// resolve to today and create a duplicate. All date math uses local parts.
+function ymd(d){
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const day = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+function todayISO(){ return ymd(new Date()); }
+// 'YYYY-MM-DD' alone is parsed as UTC midnight by JS; adding the time part
+// makes it parse in local time so month/day comparisons never shift.
+function parseYMD(s){ return new Date(String(s) + 'T00:00:00'); }
+
+/* ================= THEME ================= */
+function applyTheme(){
+  document.body.setAttribute('data-theme', settings.theme === 'dark' ? 'dark' : 'light');
+  document.getElementById('darkSwitch').classList.toggle('on', settings.theme==='dark');
+}
+function toggleTheme(){
+  settings.theme = settings.theme === 'dark' ? 'light' : 'dark';
+  persistAll(); applyTheme(); renderAll();
+}
+
+/* ================= NAVIGATION ================= */
+let currentScreen = 'dashboard';
+function goScreen(name){
+  currentScreen = name;
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-'+name).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active', b.dataset.s===name));
+  document.querySelector('.fab').style.display = (name==='dashboard' || name==='transactions') ? 'flex' : 'none';
+  renderScreen(name);
+  window.scrollTo(0,0);
+}
+function renderScreen(name){
+  if(name==='dashboard') renderDashboard();
+  else if(name==='transactions') renderTransactionsScreen();
+  else if(name==='budget') renderBudgetScreen();
+  else if(name==='stats') renderStatsScreen();
+  else if(name==='settings') renderSettingsScreen();
+}
+function renderAll(){ renderScreen(currentScreen); }
+
+/* ================= TOAST ================= */
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(window.__toastTimer);
+  window.__toastTimer = setTimeout(()=>t.classList.remove('show'), 2200);
+}
+
+/* ================= SHEETS ================= */
+function openSheet(id){
+  document.getElementById('overlay').classList.add('show');
+  document.getElementById(id).classList.add('show');
+}
+function closeAllSheets(){
+  document.getElementById('overlay').classList.remove('show');
+  document.querySelectorAll('.sheet').forEach(s=>s.classList.remove('show'));
+}
+function showInstallHint(){ renderInstallSheet(); openSheet('installSheet'); }
+
+/* ================= MONTH HELPERS ================= */
+function isSameMonth(dateStr, ref){
+  const d = parseYMD(dateStr), r = ref || new Date();
+  return d.getFullYear()===r.getFullYear() && d.getMonth()===r.getMonth();
+}
+function monthTx(list, ref){ return list.filter(t=>isSameMonth(t.date, ref)); }
+
+/* ================= DASHBOARD ================= */
+let dashDonutChart = null;
+function renderDashboard(){
+  const now = new Date();
+  const thisMonthTx = monthTx(transactions, now);
+  const income = thisMonthTx.filter(t=>t.type==='income').reduce((a,t)=>a+t.amount,0);
+  const expense = thisMonthTx.filter(t=>t.type==='expense').reduce((a,t)=>a+t.amount,0);
+  const totalIncome = transactions.filter(t=>t.type==='income').reduce((a,t)=>a+t.amount,0);
+  const totalExpense = transactions.filter(t=>t.type==='expense').reduce((a,t)=>a+t.amount,0);
+  const balance = (settings.openingBalance||0) + totalIncome - totalExpense;
+
+  document.getElementById('heroBalance').textContent = fmtVND(balance);
+  document.getElementById('heroIncome').textContent = fmtVND(income);
+  document.getElementById('heroExpense').textContent = fmtVND(expense);
+
+  // category breakdown (this month expense)
+  const byCat = {};
+  thisMonthTx.filter(t=>t.type==='expense').forEach(t=>{ byCat[t.categoryId] = (byCat[t.categoryId]||0) + t.amount; });
+  const entries = Object.entries(byCat).sort((a,b)=>b[1]-a[1]);
+  document.getElementById('donutCenterVal').textContent = fmtVND(expense);
+
+  const legend = document.getElementById('dashLegend');
+  legend.innerHTML = '';
+  if(entries.length===0){
+    legend.innerHTML = '<div class="empty-hint">Chưa có chi tiêu tháng này</div>';
+  }else{
+    entries.slice(0,5).forEach(([catId,amt])=>{
+      const c = getCat(catId);
+      const pct = expense>0 ? Math.round(amt/expense*100) : 0;
+      const row = document.createElement('div');
+      row.className = 'legend-row';
+      row.innerHTML = `<span class="sw" style="background:${esc(c.color)}"></span><span class="nm">${esc(c.icon)} ${esc(c.name)}</span><span class="pc">${pct}%</span>`;
+      legend.appendChild(row);
+    });
+  }
+
+  // recent transactions (rendered before the chart so a chart failure
+  // — e.g. CDN blocked — can never prevent this from showing)
+  const recentList = document.getElementById('recentTxList');
+  const recent = [...transactions].sort((a,b)=> parseYMD(b.date)-parseYMD(a.date) || b.createdAt-a.createdAt).slice(0,6);
+  recentList.innerHTML = recent.length ? recent.map(renderTxRowHTML).join('') : `<div class="no-data"><div class="em">🧾</div><p>Chưa có giao dịch nào.<br>Nhấn nút + để thêm giao dịch đầu tiên.</p></div>`;
+  attachTxRowEvents(recentList);
+
+  try{
+    const ctx = document.getElementById('dashDonut');
+    if(dashDonutChart) dashDonutChart.destroy();
+    dashDonutChart = new Chart(ctx, {
+      type:'doughnut',
+      data:{ labels: entries.map(e=>getCat(e[0]).name), datasets:[{ data: entries.length?entries.map(e=>e[1]):[1], backgroundColor: entries.length?entries.map(e=>getCat(e[0]).color):['#E6E1D6'], borderWidth:0 }] },
+      options:{ cutout:'72%', plugins:{ legend:{display:false}, tooltip:{enabled: entries.length>0} } }
+    });
+  }catch(e){ console.warn('Chart render skipped:', e); }
+}
+
+function renderTxRowHTML(t){
+  const c = getCat(t.categoryId);
+  const sign = t.type==='income' ? '+' : '-';
+  return `<div class="tx-item" data-id="${esc(t.id)}">
+    <div class="tx-icon" style="background:${esc(c.color)}22; color:${esc(c.color)}">${esc(c.icon)}</div>
+    <div class="tx-info">
+      <div class="cat">${esc(c.name)}</div>
+      <div class="note">${t.note ? esc(t.note) : formatDateVN(t.date)}</div>
+    </div>
+    <div class="tx-amt ${t.type==='income'?'in':'out'}">${sign}${fmtVND(t.amount)}</div>
+  </div>`;
+}
+function attachTxRowEvents(container){
+  container.querySelectorAll('.tx-item').forEach(el=>{
+    el.onclick = ()=> openTxModal(el.dataset.id);
+  });
+}
+function formatDateVN(dateStr){
+  const d = parseYMD(dateStr);
+  return d.toLocaleDateString('vi-VN', {day:'2-digit', month:'2-digit', year:'numeric'});
+}
+
+/* ================= TRANSACTIONS SCREEN ================= */
+let typeFilter = 'all';
+let catFilter = null;
+function setTypeFilter(f){
+  typeFilter = f; catFilter = null;
+  document.querySelectorAll('#typeFilterBar .chip').forEach(c=>c.classList.toggle('active', c.dataset.f===f));
+  renderTransactionsScreen();
+}
+function renderCatFilterBar(){
+  const bar = document.getElementById('catFilterBar');
+  let cats = categories;
+  if(typeFilter!=='all') cats = cats.filter(c=>c.type===typeFilter);
+  bar.innerHTML = cats.map(c=>`<button class="chip ${catFilter===c.id?'active':''}" onclick="setCatFilter('${esc(c.id)}')">${esc(c.icon)} ${esc(c.name)}</button>`).join('');
+}
+function setCatFilter(id){
+  catFilter = (catFilter===id) ? null : id;
+  renderTransactionsScreen();
+}
+// Transactions are paginated: rendering every row at once made the screen
+// slower and slower as history grew (a year of daily recurring entries is
+// already ~365 rows). We render a page at a time and append on demand.
+const TX_PAGE_SIZE = 60;
+let txVisibleCount = TX_PAGE_SIZE;
+function showMoreTx(){
+  txVisibleCount += TX_PAGE_SIZE;
+  renderTransactionsScreen(true);
+}
+function renderTransactionsScreen(keepPage){
+  if(!keepPage) txVisibleCount = TX_PAGE_SIZE;
+  renderCatFilterBar();
+  const q = (document.getElementById('searchInput').value||'').toLowerCase().trim();
+  let list = [...transactions];
+  if(typeFilter!=='all') list = list.filter(t=>t.type===typeFilter);
+  if(catFilter) list = list.filter(t=>t.categoryId===catFilter);
+  if(q) list = list.filter(t=> (t.note||'').toLowerCase().includes(q) || getCat(t.categoryId).name.toLowerCase().includes(q));
+  list.sort((a,b)=> parseYMD(b.date)-parseYMD(a.date) || b.createdAt-a.createdAt);
+
+  const container = document.getElementById('fullTxList');
+  if(!list.length){ container.innerHTML = `<div class="no-data"><div class="em">🔍</div><p>Không tìm thấy giao dịch nào phù hợp.</p></div>`; return; }
+
+  const totalCount = list.length;
+  const shown = list.slice(0, txVisibleCount);
+  const groups = {};
+  shown.forEach(t=>{ (groups[t.date] = groups[t.date]||[]).push(t); });
+  // Sum against the FULL filtered list, not just the shown/paginated rows: if
+  // pagination cuts a date's transactions in half (page boundary lands mid-day),
+  // summing only `groups[dk]` silently understates that day's total until
+  // "Xem thêm" is clicked and the rest of that day scrolls into view.
+  const dayTotals = {};
+  list.forEach(t=>{ dayTotals[t.date] = (dayTotals[t.date]||0) + (t.type==='income'?t.amount:-t.amount); });
+  const dateKeys = Object.keys(groups).sort((a,b)=> parseYMD(b)-parseYMD(a));
+  let html = dateKeys.map(dk=>{
+    const dayTotal = dayTotals[dk];
+    return `<div class="tx-date-group">
+      <div class="tx-date-label" style="display:flex;justify-content:space-between;">
+        <span>${formatDateVN(dk)}</span><span>${dayTotal>=0?'+':''}${fmtVND(dayTotal)}</span>
+      </div>
+      ${groups[dk].map(renderTxRowHTML).join('')}
+    </div>`;
+  }).join('');
+  if(totalCount > shown.length){
+    html += `<button class="btn-secondary" style="margin:14px 0 4px 0;" onclick="showMoreTx()">Xem thêm (còn ${totalCount - shown.length} giao dịch)</button>`;
+  }else if(totalCount > TX_PAGE_SIZE){
+    html += `<div style="text-align:center;color:var(--text-muted);font-size:12px;padding:14px 0;">Đã hiển thị tất cả ${totalCount} giao dịch</div>`;
+  }
+  container.innerHTML = html;
+  attachTxRowEvents(container);
+}
+
+/* ================= TX MODAL ================= */
+let txType = 'expense';
+let editingTxId = null;
+let selectedCatId = null;
+let isRecurring = false;
+
+function openTxModal(txId){
+  editingTxId = txId || null;
+  const tx = txId ? transactions.find(t=>t.id===txId) : null;
+  txType = tx ? tx.type : 'expense';
+  selectedCatId = tx ? tx.categoryId : null;
+
+  document.getElementById('txSheetTitle').textContent = tx ? 'Sửa giao dịch' : 'Thêm giao dịch';
+  document.getElementById('txAmount').value = tx ? tx.amount.toLocaleString('vi-VN') : '';
+  document.getElementById('txDate').value = tx ? tx.date : todayISO();
+  document.getElementById('txNote').value = tx ? (tx.note||'') : '';
+  document.getElementById('deleteTxBtn').style.display = tx ? 'block' : 'none';
+  document.getElementById('recurSwitch').classList.toggle('on', false);
+  document.getElementById('recurExtra').style.display = 'none';
+  isRecurring = false;
+  // Recurring setup only applies when creating a brand-new transaction.
+  // Managing an existing recurring series happens from Cài đặt.
+  document.getElementById('recurSection').style.display = tx ? 'none' : 'block';
+  setTxType(txType, true);
+  renderCatPicker();
+  openSheet('txSheet');
+  // Focus the amount field once the sheet has slid up, so the keyboard opens
+  // on the field the user always fills first. preventScroll keeps the sheet
+  // from jumping while the open animation is still running.
+  setTimeout(()=>{
+    const el = document.getElementById('txAmount');
+    if(el){ try{ el.focus({preventScroll:true}); el.select(); }catch(e){ el.focus(); } }
+  }, 320);
+}
+function setTxType(t, skipCatReset){
+  txType = t;
+  document.getElementById('typeBtnExpense').classList.toggle('active', t==='expense');
+  document.getElementById('typeBtnIncome').classList.toggle('active', t==='income');
+  if(!skipCatReset) selectedCatId = null;
+  renderCatPicker();
+}
+function renderCatPicker(){
+  const wrap = document.getElementById('txCatPicker');
+  const cats = categories.filter(c=>c.type===txType);
+  wrap.innerHTML = cats.map(c=>`
+    <div class="cat-pick-item ${selectedCatId===c.id?'selected':''}" onclick="pickCat('${esc(c.id)}')">
+      <div class="ic" style="background:${esc(c.color)}22;color:${esc(c.color)}">${esc(c.icon)}</div>
+      <span>${esc(c.name)}</span>
+    </div>`).join('');
+  if(!selectedCatId && cats.length){ selectedCatId = cats[0].id; renderCatPicker(); }
+}
+function pickCat(id){ selectedCatId = id; renderCatPicker(); }
+function toggleRecur(){
+  isRecurring = !isRecurring;
+  document.getElementById('recurSwitch').classList.toggle('on', isRecurring);
+  document.getElementById('recurExtra').style.display = isRecurring ? 'block' : 'none';
+}
+function formatAmountInput(el){
+  let raw = el.value.replace(/[^\d]/g,'');
+  el.value = raw ? Number(raw).toLocaleString('vi-VN') : '';
+}
+/* Guards against double-submission: on mobile a fast double-tap (or a tap
+   during the 280ms sheet close animation) used to fire the save twice,
+   creating two transactions AND two recurring rules — which then generated
+   duplicates every day forever. */
+let isSaving = false;
+function saveTx(){
+  if(isSaving) return;
+  const amountRaw = document.getElementById('txAmount').value.replace(/[^\d]/g,'');
+  const amount = Number(amountRaw);
+  const date = document.getElementById('txDate').value || todayISO();
+  const note = document.getElementById('txNote').value.trim();
+  if(!amount || amount<=0){ showToast('Vui lòng nhập số tiền hợp lệ'); return; }
+  if(!selectedCatId){ showToast('Vui lòng chọn danh mục'); return; }
+  const willCreateRecurring = !editingTxId && isRecurring;
+  const recurFrequency = willCreateRecurring ? document.getElementById('txRecurFreq').value : null;
+  const recurEndDate = willCreateRecurring ? (document.getElementById('txRecurEnd').value || null) : null;
+  // Validate before locking isSaving: an end date before the start date used
+  // to be silently accepted, creating a rule that deactivated itself on the
+  // very next load without ever telling the user why nothing recurred.
+  if(willCreateRecurring && recurEndDate && recurEndDate < date){
+    showToast('Ngày kết thúc phải sau ngày bắt đầu'); return;
+  }
+
+  isSaving = true;
+  setTimeout(()=>{ isSaving = false; }, 700);
+
+  let msg;
+  if(editingTxId){
+    const tx = transactions.find(t=>t.id===editingTxId);
+    Object.assign(tx, {type:txType, amount, categoryId:selectedCatId, date, note});
+    msg = 'Đã cập nhật giao dịch';
+  }else if(willCreateRecurring){
+    const rule = { id:uid(), type:txType, amount, categoryId:selectedCatId, note, frequency:recurFrequency, startDate:date, endDate:recurEndDate, lastGeneratedDate:date, nextIndex:1, active:true, createdAt:Date.now() };
+    recurringRules.push(rule);
+    transactions.push({ id:uid(), type:txType, amount, categoryId:selectedCatId, date, note, recurring:true, recurringId:rule.id, createdAt:Date.now() });
+    // Immediately catch up any occurrences between the start date and today,
+    // instead of waiting for the next app reload to backfill them.
+    generateDueRecurring();
+    msg = 'Đã tạo giao dịch định kỳ';
+  }else{
+    transactions.push({ id:uid(), type:txType, amount, categoryId:selectedCatId, date, note, createdAt:Date.now() });
+    msg = 'Đã thêm giao dịch';
+  }
+  persistAndToast(msg);
+  closeAllSheets();
+  renderAll();
+}
+function deleteTx(){
+  if(!editingTxId) return;
+  transactions = transactions.filter(t=>t.id!==editingTxId);
+  persistAndToast('Đã xóa giao dịch');
+  closeAllSheets(); renderAll();
+}
+
+/* ================= BUDGET SCREEN ================= */
+function renderBudgetScreen(){
+  const now = new Date();
+  const thisMonthExpense = monthTx(transactions, now).filter(t=>t.type==='expense');
+  const spentByCat = {};
+  thisMonthExpense.forEach(t=>{ spentByCat[t.categoryId] = (spentByCat[t.categoryId]||0) + t.amount; });
+
+  const expenseCats = categories.filter(c=>c.type==='expense');
+  const list = document.getElementById('budgetList');
+  let totalPlan = 0, totalSpent = 0;
+
+  const withBudget = expenseCats.filter(c=>budgets[c.id]);
+  const withoutBudget = expenseCats.filter(c=>!budgets[c.id]);
+
+  let html = '';
+  if(withBudget.length===0){
+    html += `<div class="no-data"><div class="em">🎯</div><p>Chưa có ngân sách nào được đặt.<br>Nhấn vào một danh mục bên dưới để bắt đầu.</p></div>`;
+  }
+  withBudget.forEach(c=>{
+    const plan = budgets[c.id];
+    const spent = spentByCat[c.id] || 0;
+    totalPlan += plan; totalSpent += spent;
+    const pct = Math.min(100, Math.round(spent/plan*100));
+    const realPct = Math.round(spent/plan*100);
+    const cls = pct>=100 ? 'over' : (pct>=80 ? 'warn' : '');
+    html += `<div class="budget-item" onclick="openBudgetModal('${esc(c.id)}')">
+      <div class="budget-top"><span style="font-size:18px">${esc(c.icon)}</span><span class="nm">${esc(c.name)}</span><span class="amt">${fmtVND(spent)} / ${fmtVND(plan)}</span></div>
+      <div class="bar-track"><div class="bar-fill ${cls}" style="width:${pct}%"></div></div>
+      <div class="budget-foot"><span>${realPct}% đã dùng</span><span>${plan-spent>=0? 'Còn lại '+fmtVND(plan-spent) : 'Vượt '+fmtVND(spent-plan)}</span></div>
+    </div>`;
+  });
+  document.getElementById('budgetTotalPlan').textContent = fmtVND(totalPlan);
+  document.getElementById('budgetTotalSpent').textContent = fmtVND(totalSpent);
+
+  if(withoutBudget.length){
+    html += `<div class="section-head"><h2 style="font-size:13px;color:var(--text-muted)">Chưa đặt ngân sách</h2></div>`;
+    html += `<div class="cat-manage-list" style="padding:0 20px 10px 20px;">` + withoutBudget.map(c=>`
+      <div class="cat-manage-item" onclick="openBudgetModal('${esc(c.id)}')">
+        <div class="ic" style="background:${esc(c.color)}22;color:${esc(c.color)}">${esc(c.icon)}</div>
+        <span>${esc(c.name)}</span>
+      </div>`).join('') + `</div>`;
+  }
+  list.innerHTML = html;
+}
+let editingBudgetCatId = null;
+function openBudgetModal(catId){
+  editingBudgetCatId = catId;
+  const c = getCat(catId);
+  document.getElementById('budgetSheetTitle').textContent = 'Ngân sách: ' + c.name;
+  document.getElementById('budgetAmount').value = budgets[catId] ? budgets[catId].toLocaleString('vi-VN') : '';
+  document.getElementById('deleteBudgetBtn').style.display = budgets[catId] ? 'block' : 'none';
+  openSheet('budgetSheet');
+}
+function saveBudget(){
+  if(isSaving) return;
+  const raw = document.getElementById('budgetAmount').value.replace(/[^\d]/g,'');
+  const amt = Number(raw);
+  if(!amt || amt<=0){ showToast('Vui lòng nhập số tiền hợp lệ'); return; }
+  isSaving = true; setTimeout(()=>{ isSaving = false; }, 700);
+  budgets[editingBudgetCatId] = amt;
+  persistAndToast('Đã lưu ngân sách');
+  closeAllSheets(); renderBudgetScreen();
+}
+function removeBudget(){
+  delete budgets[editingBudgetCatId];
+  persistAndToast('Đã xóa ngân sách');
+  closeAllSheets(); renderBudgetScreen();
+}
+
+/* ================= STATS SCREEN ================= */
+let statPeriod = 'month';
+let customRangeStart = null, customRangeEnd = null;
+let trendChart=null, statDonutChart=null;
+function setStatPeriod(p){
+  statPeriod = p;
+  document.querySelectorAll('.stat-tabs .chip').forEach(c=>c.classList.toggle('active', c.dataset.p===p));
+  document.getElementById('customRangeBox').style.display = p==='custom' ? 'block' : 'none';
+  if(p==='custom' && !customRangeStart){
+    const now = new Date();
+    customRangeStart = ymd(new Date(now.getFullYear(), now.getMonth(), 1));
+    customRangeEnd = todayISO();
+    document.getElementById('statCustomStart').value = customRangeStart;
+    document.getElementById('statCustomEnd').value = customRangeEnd;
+  }
+  renderStatsScreen();
+}
+function applyCustomRange(){
+  const s = document.getElementById('statCustomStart').value;
+  const e = document.getElementById('statCustomEnd').value;
+  if(!s || !e) return;
+  if(s > e){
+    showToast('Ngày bắt đầu phải trước ngày kết thúc');
+    // Revert the inputs to the last valid range: without this, the fields
+    // kept showing the rejected dates while the summary/chart below kept
+    // computing from the old range — displayed dates and displayed numbers
+    // silently stopped matching each other.
+    document.getElementById('statCustomStart').value = customRangeStart;
+    document.getElementById('statCustomEnd').value = customRangeEnd;
+    return;
+  }
+  customRangeStart = s; customRangeEnd = e;
+  renderStatsScreen();
+}
+function getStatRangeTx(){
+  const now = new Date();
+  if(statPeriod==='month') return transactions.filter(t=>isSameMonth(t.date, now));
+  if(statPeriod==='year') return transactions.filter(t=> parseYMD(t.date).getFullYear()===now.getFullYear());
+  if(statPeriod==='custom') return transactions.filter(t=> customRangeStart && customRangeEnd && t.date >= customRangeStart && t.date <= customRangeEnd);
+  // 6m: cap at today so this always matches the trend chart below, which only
+  // ever draws buckets through the current month — without the cap, a
+  // future-dated transaction inflated this total without ever appearing in
+  // the chart it's supposed to summarize.
+  const cutoff = new Date(now.getFullYear(), now.getMonth()-5, 1);
+  return transactions.filter(t=> parseYMD(t.date) >= cutoff && t.date <= todayISO());
+}
+// Buckets an arbitrary date range into weekly chunks (<=31 days) or monthly
+// chunks (longer ranges) for the trend chart — same idea as the fixed
+// month/year views, just generalized to a user-picked start/end.
+function buildTrendBuckets(list, startStr, endStr){
+  const start = parseYMD(startStr), end = parseYMD(endStr);
+  const totalDays = Math.max(1, Math.round((end-start)/86400000)+1);
+  let labels=[], incData=[], expData=[];
+  if(totalDays <= 31){
+    let cursor = new Date(start);
+    while(cursor <= end){
+      const bucketStart = new Date(cursor);
+      const bucketEndCandidate = new Date(cursor); bucketEndCandidate.setDate(bucketEndCandidate.getDate()+6);
+      const bucketEnd = bucketEndCandidate > end ? end : bucketEndCandidate;
+      const bs = ymd(bucketStart), be = ymd(bucketEnd);
+      labels.push(`${bucketStart.getDate()}/${bucketStart.getMonth()+1}-${bucketEnd.getDate()}/${bucketEnd.getMonth()+1}`);
+      incData.push(list.filter(t=>t.type==='income' && t.date>=bs && t.date<=be).reduce((a,t)=>a+t.amount,0));
+      expData.push(list.filter(t=>t.type==='expense' && t.date>=bs && t.date<=be).reduce((a,t)=>a+t.amount,0));
+      cursor.setDate(cursor.getDate()+7);
+    }
+  }else{
+    let cursor = new Date(start.getFullYear(), start.getMonth(), 1);
+    const endMonth = new Date(end.getFullYear(), end.getMonth(), 1);
+    let guard = 0;
+    while(cursor <= endMonth && guard < 60){
+      labels.push('Th'+(cursor.getMonth()+1)+'/'+cursor.getFullYear());
+      incData.push(list.filter(t=>t.type==='income' && isSameMonth(t.date,cursor)).reduce((a,t)=>a+t.amount,0));
+      expData.push(list.filter(t=>t.type==='expense' && isSameMonth(t.date,cursor)).reduce((a,t)=>a+t.amount,0));
+      cursor.setMonth(cursor.getMonth()+1);
+      guard++;
+    }
+  }
+  return {labels, incData, expData};
+}
+function renderStatsScreen(){
+  const list = getStatRangeTx();
+  const income = list.filter(t=>t.type==='income').reduce((a,t)=>a+t.amount,0);
+  const expense = list.filter(t=>t.type==='expense').reduce((a,t)=>a+t.amount,0);
+  document.getElementById('statIncome').textContent = fmtVND(income);
+  document.getElementById('statExpense').textContent = fmtVND(expense);
+
+  // trend chart: group by month (if 6m/year) or by day (if month) or custom
+  let labels=[], incData=[], expData=[];
+  if(statPeriod==='custom'){
+    const res = buildTrendBuckets(list, customRangeStart||todayISO(), customRangeEnd||todayISO());
+    labels=res.labels; incData=res.incData; expData=res.expData;
+  }else if(statPeriod==='month'){
+    const now = new Date();
+    const daysInMonth = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
+    const weekBuckets = Math.ceil(daysInMonth/7);
+    for(let w=0; w<weekBuckets; w++){
+      const start = w*7+1, end = Math.min(daysInMonth, start+6);
+      labels.push(`${start}-${end}`);
+      const wi = list.filter(t=>t.type==='income' && dayInRange(t.date,start,end)).reduce((a,t)=>a+t.amount,0);
+      const we = list.filter(t=>t.type==='expense' && dayInRange(t.date,start,end)).reduce((a,t)=>a+t.amount,0);
+      incData.push(wi); expData.push(we);
+    }
+  }else{
+    const months = statPeriod==='year' ? 12 : 6;
+    const now = new Date();
+    const start = statPeriod==='year' ? 0 : now.getMonth()-5;
+    for(let i=0;i<months;i++){
+      const mIdx = statPeriod==='year' ? i : start+i;
+      const d = new Date(now.getFullYear(), mIdx, 1);
+      labels.push('Th'+(d.getMonth()+1));
+      // Bucket from `list` (already the getStatRangeTx() result), not raw
+      // `transactions`: for the 6m period `list` is capped at today, so a
+      // future-dated transaction in the current month would otherwise show up
+      // in this bar but not in the "Chi tiêu/Thu nhập" totals above it.
+      const mi = list.filter(t=>t.type==='income' && isSameMonth(t.date,d)).reduce((a,t)=>a+t.amount,0);
+      const me = list.filter(t=>t.type==='expense' && isSameMonth(t.date,d)).reduce((a,t)=>a+t.amount,0);
+      incData.push(mi); expData.push(me);
+    }
+  }
+  const trendCtx = document.getElementById('trendChart');
+  const gridColor = getComputedStyle(document.body).getPropertyValue('--border');
+  const textColor = getComputedStyle(document.body).getPropertyValue('--text-muted');
+  try{
+    if(trendChart) trendChart.destroy();
+    trendChart = new Chart(trendCtx, {
+      type:'bar',
+      data:{ labels, datasets:[
+        {label:'Thu nhập', data:incData, backgroundColor:'#1B8A5A', borderRadius:6, maxBarThickness:16},
+        {label:'Chi tiêu', data:expData, backgroundColor:'#C8553D', borderRadius:6, maxBarThickness:16},
+      ]},
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        scales:{ x:{ grid:{display:false}, ticks:{color:textColor,font:{size:10}} }, y:{ grid:{color:gridColor}, ticks:{color:textColor,font:{size:9},callback:v=>v>=1000000?(v/1000000)+'tr':v} } },
+        plugins:{ legend:{ position:'bottom', labels:{color:textColor, boxWidth:10, font:{size:11}} } }
+      }
+    });
+  }catch(e){ console.warn('Chart render skipped:', e); }
+
+  // category donut
+  const byCat = {};
+  list.filter(t=>t.type==='expense').forEach(t=>{ byCat[t.categoryId]=(byCat[t.categoryId]||0)+t.amount; });
+  const entries = Object.entries(byCat).sort((a,b)=>b[1]-a[1]);
+  const donutCtx = document.getElementById('statDonut');
+  try{
+    if(statDonutChart) statDonutChart.destroy();
+    statDonutChart = new Chart(donutCtx, {
+      type:'doughnut',
+      data:{ labels: entries.map(e=>getCat(e[0]).name), datasets:[{ data: entries.length?entries.map(e=>e[1]):[1], backgroundColor: entries.length?entries.map(e=>getCat(e[0]).color):['#E6E1D6'], borderWidth:0 }] },
+      options:{ maintainAspectRatio:false, cutout:'60%', plugins:{ legend:{ position:'bottom', labels:{color:textColor, boxWidth:10, font:{size:10}} }, tooltip:{enabled:entries.length>0} } }
+    });
+  }catch(e){ console.warn('Chart render skipped:', e); }
+}
+function dayInRange(dateStr, start, end){
+  const d = parseYMD(dateStr).getDate();
+  return d>=start && d<=end;
+}
+
+/* ================= OPENING BALANCE ================= */
+function openOpeningBalanceModal(){
+  document.getElementById('openBalAmount').value = settings.openingBalance ? settings.openingBalance.toLocaleString('vi-VN') : '';
+  openSheet('openBalSheet');
+}
+function saveOpeningBalance(){
+  const raw = document.getElementById('openBalAmount').value.replace(/[^\d]/g,'');
+  settings.openingBalance = Number(raw) || 0;
+  persistAndToast('Đã lưu số dư ban đầu');
+  closeAllSheets(); renderAll();
+}
+
+/* ================= SETTINGS SCREEN ================= */
+function renderSettingsScreen(){
+  document.getElementById('darkSwitch').classList.toggle('on', settings.theme==='dark');
+  document.getElementById('openingBalanceVal').textContent = fmtVND(settings.openingBalance||0);
+
+  const recurGroup = document.getElementById('recurringGroup');
+  const activeRules = recurringRules.filter(r=>r.active);
+  if(!activeRules.length){
+    recurGroup.innerHTML = `<div class="settings-row" style="cursor:default"><div class="ico">🔁</div><div class="lbl" style="color:var(--text-muted);font-weight:400;">Chưa có giao dịch định kỳ nào. Bật "Giao dịch định kỳ" khi thêm giao dịch mới để tạo.</div></div>`;
+  }else{
+    recurGroup.innerHTML = activeRules.map(r=>{
+      const c = getCat(r.categoryId);
+      const next = occurrenceDate(r.startDate, r.frequency, r.nextIndex||1);
+      return `<div class="settings-row" onclick="stopRecurringRule('${esc(r.id)}')">
+        <div class="ico" style="background:${esc(c.color)}22;color:${esc(c.color)}">${esc(c.icon)}</div>
+        <div class="lbl">${esc(c.name)} · ${freqLabel(r.frequency)}<br><span style="font-size:11px;color:var(--text-muted);font-weight:400;">Kế tiếp: ${formatDateVN(next)} · ${r.type==='income'?'+':'-'}${fmtVND(r.amount)}</span></div>
+        <div class="val" style="color:var(--expense)">Dừng</div>
+      </div>`;
+    }).join('');
+  }
+
+  const exp = categories.filter(c=>c.type==='expense');
+  const inc = categories.filter(c=>c.type==='income');
+  document.getElementById('catManageExpense').innerHTML = exp.map(c=>`
+    <div class="cat-manage-item" onclick="openCategoryModal('${esc(c.id)}')">
+      <div class="ic" style="background:${esc(c.color)}22;color:${esc(c.color)}">${esc(c.icon)}</div><span>${esc(c.name)}</span>
+    </div>`).join('') + `<div class="cat-manage-item add" onclick="openCategoryModal(null,'expense')"><div class="ic">+</div><span>Thêm</span></div>`;
+  document.getElementById('catManageIncome').innerHTML = inc.map(c=>`
+    <div class="cat-manage-item" onclick="openCategoryModal('${esc(c.id)}')">
+      <div class="ic" style="background:${esc(c.color)}22;color:${esc(c.color)}">${esc(c.icon)}</div><span>${esc(c.name)}</span>
+    </div>`).join('') + `<div class="cat-manage-item add" onclick="openCategoryModal(null,'income')"><div class="ic">+</div><span>Thêm</span></div>`;
+}
+
+function stopRecurringRule(ruleId){
+  const rule = recurringRules.find(r=>r.id===ruleId);
+  if(!rule) return;
+  if(!confirm('Dừng giao dịch định kỳ này? Các giao dịch đã tạo trước đó vẫn được giữ lại, chỉ dừng tạo mới trong tương lai.')) return;
+  rule.active = false;
+  persistAndToast('Đã dừng giao dịch định kỳ');
+  renderSettingsScreen();
+}
+
+// A dedicated reorder screen: the user sees the whole ordered list at once
+// and moves rows within it, instead of guessing what "up/down" meant while
+// editing a single category in isolation.
+let reorderType = 'expense';
+function openReorderSheet(){
+  reorderType = 'expense';
+  setReorderType('expense');
+  openSheet('reorderSheet');
+}
+function setReorderType(t){
+  reorderType = t;
+  document.getElementById('reorderTabExpense').classList.toggle('active', t==='expense');
+  document.getElementById('reorderTabIncome').classList.toggle('active', t==='income');
+  renderReorderList();
+}
+function renderReorderList(){
+  const list = categories.filter(c=>c.type===reorderType);
+  document.getElementById('reorderList').innerHTML = list.map((c,i)=>`
+    <div class="tx-item" style="cursor:default;">
+      <div style="width:22px;text-align:center;color:var(--text-muted);font-size:12px;font-weight:700;">${i+1}</div>
+      <div class="tx-icon" style="background:${esc(c.color)}22;color:${esc(c.color)};width:38px;height:38px;font-size:18px;">${esc(c.icon)}</div>
+      <div class="tx-info"><div class="cat">${esc(c.name)}</div></div>
+      <button class="icon-btn" style="width:34px;height:34px;${i===0?'opacity:.3;':''}" onclick="moveCategory('${esc(c.id)}',-1)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m18 15-6-6-6 6"/></svg>
+      </button>
+      <button class="icon-btn" style="width:34px;height:34px;margin-left:6px;${i===list.length-1?'opacity:.3;':''}" onclick="moveCategory('${esc(c.id)}',1)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>
+      </button>
+    </div>`).join('') || '<div class="empty-hint">Chưa có danh mục nào</div>';
+}
+function moveCategory(catId, dir){
+  const sameType = categories.filter(c=>c.type===reorderType);
+  const pos = sameType.findIndex(c=>c.id===catId);
+  const target = pos + dir;
+  if(pos < 0 || target < 0 || target >= sameType.length) return;
+  const idxA = categories.findIndex(c=>c.id===sameType[pos].id);
+  const idxB = categories.findIndex(c=>c.id===sameType[target].id);
+  [categories[idxA], categories[idxB]] = [categories[idxB], categories[idxA]];
+  persistAll();
+  renderReorderList();
+  renderSettingsScreen();
+}
+
+/* ================= CATEGORY MODAL ================= */
+let editingCatId = null;
+let catType = 'expense';
+let selectedEmoji = '🍜';
+let selectedColor = '#C8553D';
+function openCategoryModal(catId, presetType){
+  editingCatId = catId || null;
+  const c = catId ? getCat(catId) : null;
+  catType = c ? c.type : (presetType || 'expense');
+  selectedEmoji = c ? c.icon : EMOJI_OPTIONS[0];
+  selectedColor = c ? c.color : COLOR_OPTIONS[0];
+  document.getElementById('catSheetTitle').textContent = c ? 'Sửa danh mục' : 'Danh mục mới';
+  document.getElementById('catName').value = c ? c.name : '';
+  document.getElementById('deleteCatBtn').style.display = c ? 'block' : 'none';
+  setCatType(catType, true);
+  renderEmojiPicker(); renderColorPicker();
+  openSheet('catSheet');
+}
+function setCatType(t, skip){
+  catType = t;
+  document.getElementById('catTypeBtnExpense').classList.toggle('active', t==='expense');
+  document.getElementById('catTypeBtnIncome').classList.toggle('active', t==='income');
+}
+function renderEmojiPicker(){
+  document.getElementById('emojiPicker').innerHTML = EMOJI_OPTIONS.map(e=>`<span class="${e===selectedEmoji?'selected':''}" onclick="pickEmoji('${e}')">${e}</span>`).join('');
+}
+function pickEmoji(e){ selectedEmoji = e; renderEmojiPicker(); }
+function renderColorPicker(){
+  document.getElementById('colorPicker').innerHTML = COLOR_OPTIONS.map(c=>`<div class="color-swatch ${c===selectedColor?'selected':''}" style="background:${c}" onclick="pickColor('${c}')"></div>`).join('');
+}
+function pickColor(c){ selectedColor = c; renderColorPicker(); }
+const MAX_CATEGORIES_PER_TYPE = 24; // keeps the picker usable and storage bounded
+function saveCategory(){
+  if(isSaving) return;
+  const name = document.getElementById('catName').value.trim();
+  if(!name){ showToast('Vui lòng nhập tên danh mục'); return; }
+  const existing = editingCatId ? getCat(editingCatId) : null;
+  const isTypeChange = !!existing && existing.type !== catType;
+  const sameType = categories.filter(c=>c.type===catType && c.id!==editingCatId);
+  // A type change moves this category into catType's group same as creating a
+  // new one there would — must count against the same cap, not just brand-new
+  // categories, otherwise editing an existing category to flip its type is a
+  // way to sneak the group past MAX_CATEGORIES_PER_TYPE.
+  if((!editingCatId || isTypeChange) && sameType.length >= MAX_CATEGORIES_PER_TYPE){
+    showToast(`Tối đa ${MAX_CATEGORIES_PER_TYPE} danh mục mỗi loại`); return;
+  }
+  if(sameType.some(c=>c.name.toLowerCase()===name.toLowerCase())){
+    showToast('Tên danh mục này đã tồn tại'); return;
+  }
+  // Changing Chi tiêu<->Thu nhập on a category already referenced by
+  // transactions/budgets/recurring rules doesn't touch those records — block
+  // it, same as delete below, instead of silently orphaning them.
+  if(isTypeChange){
+    if(isCategoryInUse(editingCatId)){
+      showToast('Không thể đổi loại: danh mục đang có giao dịch hoặc định kỳ');
+      return;
+    }
+    // Budgets are only ever set on expense categories (see openBudgetModal).
+    // Without this check the budget stays keyed to this id after the type
+    // change — invisible while the category is 'income', then silently
+    // reappearing with its old amount if it's ever switched back to 'expense'.
+    if(budgets[editingCatId] !== undefined){
+      showToast('Không thể đổi loại: hãy xóa ngân sách của danh mục này trước');
+      return;
+    }
+  }
+  isSaving = true; setTimeout(()=>{ isSaving = false; }, 700);
+  let msg;
+  if(editingCatId){
+    const c = getCat(editingCatId);
+    Object.assign(c, {name, icon:selectedEmoji, color:selectedColor, type:catType});
+    msg = 'Đã cập nhật danh mục';
+  }else{
+    categories.push({id:uid(), name, icon:selectedEmoji, color:selectedColor, type:catType});
+    msg = 'Đã thêm danh mục';
+  }
+  persistAndToast(msg);
+  closeAllSheets(); renderAll();
+}
+function deleteCategory(){
+  if(!editingCatId) return;
+  if(isCategoryInUse(editingCatId)){ showToast('Không thể xóa: danh mục đang có giao dịch hoặc định kỳ'); return; }
+  categories = categories.filter(c=>c.id!==editingCatId);
+  delete budgets[editingCatId];
+  persistAndToast('Đã xóa danh mục');
+  closeAllSheets(); renderAll();
+}
+
+/* ================= DATA EXPORT / IMPORT ================= */
+// Proper CSV field escaping (RFC 4180): wrap in quotes (doubling any internal
+// quotes) whenever a field contains a comma, quote, or newline. Notes come
+// from a <textarea> (multi-line) and category names are free text, so either
+// could contain any of those — an un-escaped newline used to split one
+// logical row into two broken physical lines when opened in Excel/Sheets.
+function csvField(v){
+  const s = String(v==null?'':v);
+  return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s;
+}
+function exportData(fmt){
+  if(fmt==='json'){
+    const data = {transactions, categories, budgets, settings, recurringRules, exportedAt:new Date().toISOString()};
+    downloadFile('so-chi-tieu-' + todayISO() + '.json', JSON.stringify(data,null,2), 'application/json');
+  }else{
+    const rows = [['Ngày','Loại','Danh mục','Số tiền','Ghi chú']];
+    // Sort a COPY: transactions.sort() mutates in place, which used to reorder
+    // the shared in-memory array as a side effect of exporting. Also use
+    // parseYMD (local-time) instead of new Date(dateStr) (UTC midnight) to
+    // stay consistent with every other date comparison in this file.
+    [...transactions].sort((a,b)=>parseYMD(a.date)-parseYMD(b.date)).forEach(t=>{
+      rows.push([t.date, t.type==='income'?'Thu nhập':'Chi tiêu', getCat(t.categoryId).name, t.amount, t.note||'']);
+    });
+    const csv = rows.map(r=>r.map(csvField).join(',')).join('\r\n');
+    downloadFile('so-chi-tieu-' + todayISO() + '.csv', '\uFEFF'+csv, 'text/csv');
+  }
+  showToast('Đã xuất dữ liệu');
+}
+function downloadFile(filename, content, mime){
+  const blob = new Blob([content], {type:mime});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; document.body.appendChild(a); a.click();
+  document.body.removeChild(a); URL.revokeObjectURL(url);
+}
+function importData(evt){
+  const file = evt.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e=>{
+    try{
+      const data = JSON.parse(e.target.result);
+      // Validate the shape BEFORE touching anything: a syntactically valid but
+      // unrelated JSON file used to silently wipe the whole ledger.
+      if(!data || typeof data !== 'object' || !Array.isArray(data.transactions) || !Array.isArray(data.categories)){
+        showToast('File không phải bản sao lưu của app này'); return;
+      }
+      const validTx = data.transactions.filter(t=>
+        t && typeof t === 'object' &&
+        (t.type==='income' || t.type==='expense') &&
+        typeof t.amount === 'number' && isFinite(t.amount) && t.amount > 0 &&
+        typeof t.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(t.date)
+      );
+      const validCats = data.categories.filter(c=>
+        c && typeof c === 'object' && typeof c.id === 'string' && typeof c.name === 'string' &&
+        (c.type==='income' || c.type==='expense')
+      );
+      if(!validCats.length){ showToast('File sao lưu thiếu danh mục hợp lệ'); return; }
+      // Same idea as validTx above: a hand-edited rule missing categoryId/
+      // frequency/startDate used to sail straight into occurrenceDate() inside
+      // generateDueRecurring(), producing NaN dates and a rule stuck silently
+      // broken forever (or worse, throwing and blocking every other rule's
+      // catch-up in the same forEach pass).
+      const rawRecur = Array.isArray(data.recurringRules) ? data.recurringRules : [];
+      const validRecur = rawRecur.filter(r=>
+        r && typeof r === 'object' &&
+        typeof r.id === 'string' &&
+        (r.type==='income' || r.type==='expense') &&
+        typeof r.amount === 'number' && isFinite(r.amount) && r.amount > 0 &&
+        typeof r.categoryId === 'string' &&
+        ['daily','weekly','monthly','yearly'].includes(r.frequency) &&
+        typeof r.startDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(r.startDate) &&
+        (r.endDate == null || (typeof r.endDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(r.endDate)))
+      ).map(r=>({
+        id:r.id, type:r.type, amount:r.amount, categoryId:r.categoryId,
+        note: typeof r.note === 'string' ? r.note : '',
+        frequency:r.frequency, startDate:r.startDate, endDate:r.endDate||null,
+        lastGeneratedDate: typeof r.lastGeneratedDate==='string' ? r.lastGeneratedDate : r.startDate,
+        nextIndex: (Number.isInteger(r.nextIndex) && r.nextIndex>0) ? r.nextIndex : 1,
+        active: r.active !== false,
+        createdAt: typeof r.createdAt==='number' ? r.createdAt : Date.now()
+      }));
+      const skippedTx = data.transactions.length - validTx.length;
+      const skippedRecur = rawRecur.length - validRecur.length;
+      const skippedTotal = skippedTx + skippedRecur;
+      if(!confirm(`Nhập ${validTx.length} giao dịch và ${validCats.length} danh mục.\nDữ liệu hiện tại sẽ bị THAY THẾ. Tiếp tục?`)) return;
+      // Regenerate ids instead of trusting the file's ids verbatim: a
+      // hand-edited backup with missing/duplicate transaction ids would make
+      // deleteTx()/openTxModal() (both look a record up by id) silently act
+      // on the wrong transaction. recurringId still correctly points at each
+      // rule's own (untouched) id, since only the transaction's own id changes.
+      transactions = validTx.map(t=> ({...t, id:uid()}));
+      categories = validCats;
+      budgets = {};
+      if(data.budgets && typeof data.budgets === 'object' && !Array.isArray(data.budgets)){
+        // Only keep sane positive numbers — an imported non-numeric or
+        // negative value used to sail straight into the % calculations on
+        // the budget screen (e.g. a negative bar-fill width).
+        Object.keys(data.budgets).forEach(k=>{
+          const v = data.budgets[k];
+          if(typeof v === 'number' && isFinite(v) && v > 0) budgets[k] = v;
+        });
+      }
+      recurringRules = validRecur;
+      if(data.settings && typeof data.settings.openingBalance === 'number' && isFinite(data.settings.openingBalance)){
+        settings.openingBalance = data.settings.openingBalance;
+      }
+      generateDueRecurring();
+      persistAndToast(skippedTotal>0 ? `Đã nhập, bỏ qua ${skippedTotal} dòng lỗi` : 'Đã nhập dữ liệu thành công');
+      renderAll();
+    }catch(err){ showToast('File không hợp lệ'); }
+  };
+  reader.readAsText(file);
+  evt.target.value = '';
+}
+function confirmReset(){
+  const warning = '⚠️ XÓA TOÀN BỘ DỮ LIỆU?\n\nToàn bộ giao dịch, danh mục, ngân sách và định kỳ sẽ bị xóa VĨNH VIỄN khỏi máy này. Hành động này KHÔNG THỂ hoàn tác.\n\nApp sẽ tự động tải về 1 file sao lưu trước khi xóa để bạn có thể khôi phục nếu cần.';
+  if(!confirm(warning)) return;
+
+  // Safety net beyond the confirm() above: always back up to a JSON file
+  // before wiping, so a confirmed-but-regretted reset can still be undone by
+  // re-importing this file. If the backup itself fails for any reason, abort
+  // the wipe instead of deleting data with no safety net.
+  try{
+    const backupData = {transactions, categories, budgets, settings, recurringRules, exportedAt:new Date().toISOString()};
+    const now = new Date();
+    const stamp = todayISO() + '_' + String(now.getHours()).padStart(2,'0') + String(now.getMinutes()).padStart(2,'0');
+    downloadFile(`so-chi-tieu-backup-truoc-khi-xoa-${stamp}.json`, JSON.stringify(backupData, null, 2), 'application/json');
+  }catch(e){
+    showToast('⚠️ Không tạo được file sao lưu — đã hủy xóa để bảo vệ dữ liệu của bạn');
+    return;
+  }
+
+  transactions = []; categories = JSON.parse(JSON.stringify(DEFAULT_CATEGORIES)); budgets = {}; recurringRules = []; settings.openingBalance = 0;
+  persistAndToast('Đã sao lưu và xóa toàn bộ dữ liệu');
+  renderAll();
+}
+
+/* ================= MULTI-TAB WARNING =================
+   localStorage has no cross-tab locking or merging: whichever tab calls
+   persistAll() last overwrites ALL 5 storage keys with its own in-memory
+   snapshot, silently dropping any change made in another open tab in the
+   meantime. We can't safely merge concurrent edits here, so the best we can
+   do is tell the user another tab/window of the app is open so they know to
+   avoid editing in both at once.
+*/
+function setupMultiTabWarning(){
+  if(!('BroadcastChannel' in window)) return;
+  try{
+    const tabId = uid();
+    const channel = new BroadcastChannel('qlct_tabs');
+    channel.postMessage({type:'hello', id:tabId});
+    channel.onmessage = (e)=>{
+      if(!e.data || e.data.id === tabId) return;
+      // Reply so a tab that just opened also learns about US, not just the
+      // other way around — otherwise only the tab that was already open gets warned.
+      if(e.data.type === 'hello') channel.postMessage({type:'ack', id:tabId});
+      showToast('⚠️ App đang mở ở tab/cửa sổ khác — sửa cùng lúc có thể làm mất dữ liệu');
+    };
+  }catch(e){}
+}
+
+/* ================= PWA INSTALL =================
+   Android/Chrome fires beforeinstallprompt when the PWA criteria are met;
+   capturing it lets us trigger the real native install dialog with one tap
+   instead of sending the user hunting through a browser menu. iOS Safari has
+   no equivalent API — Apple never exposes a way to trigger "Add to Home
+   Screen" from JS, so there (and anywhere the prompt event never fires) we
+   fall back to the original manual steps, narrowed to the detected platform
+   when we can tell what it is.
+*/
+let deferredInstallPrompt = null;
+function detectInstallPlatform(){
+  const ua = navigator.userAgent || '';
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+  if(isStandalone) return 'installed';
+  if(/iPhone|iPad|iPod/.test(ua)) return 'ios';
+  if(/Android/.test(ua)) return 'android';
+  return 'unknown';
+}
+function setupPwaInstall(){
+  window.addEventListener('beforeinstallprompt', (e)=>{
+    e.preventDefault();
+    deferredInstallPrompt = e;
+    // The sheet may already be open showing the manual fallback (rendered
+    // before the browser fired this event) — refresh it so the real
+    // one-tap button replaces it instead of waiting for the next open.
+    if(document.getElementById('installSheet').classList.contains('show')) renderInstallSheet();
+  });
+  window.addEventListener('appinstalled', ()=>{
+    deferredInstallPrompt = null;
+    showToast('Đã cài đặt thành công!');
+  });
+}
+async function doRealInstall(){
+  if(!deferredInstallPrompt) return;
+  const promptEvent = deferredInstallPrompt;
+  deferredInstallPrompt = null; // a captured prompt can only be used once
+  promptEvent.prompt();
+  const choice = await promptEvent.userChoice;
+  closeAllSheets();
+  showToast(choice.outcome === 'accepted' ? 'Đã cài đặt thành công!' : 'Đã hủy cài đặt');
+}
+function renderInstallSheet(){
+  const platform = detectInstallPlatform();
+  const body = document.getElementById('installSheetContent');
+
+  if(platform === 'installed'){
+    body.innerHTML = `<p style="color:var(--text)">✅ Bạn đã cài app này rồi — mở lại từ biểu tượng trên màn hình chính.</p>`;
+    return;
+  }
+  if(deferredInstallPrompt){
+    body.innerHTML = `
+      <p style="color:var(--text)">Bấm nút bên dưới để cài app vào máy.</p>
+      <button class="btn-primary" id="realInstallBtn">Cài đặt ngay</button>
+      <button class="btn-secondary" onclick="closeAllSheets()">Để sau</button>`;
+    document.getElementById('realInstallBtn').onclick = doRealInstall;
+    return;
+  }
+  // Fallback: manual steps, narrowed to the detected platform when known —
+  // shows both (same as before this feature existed) when platform is 'unknown'.
+  // Plain --text, not --gold: gold-on-white in light mode is ~2.4:1 contrast
+  // (WCAG AA needs 4.5:1 for text this size) — near-unreadable. The ⚠️ carries
+  // the "pay attention" signal instead, matching how toasts already flag
+  // warnings elsewhere in the app.
+  let html = `<p><b style="color:var(--text)">⚠️ Lưu ý:</b> Chỉ hoạt động khi mở qua địa chỉ https://, không phải mở file trực tiếp.</p>`;
+  if(platform !== 'ios'){
+    html += `<p><b style="color:var(--text)">Trên Android (Chrome):</b><br>Menu ⋮ → "Thêm vào Màn hình chính" / "Cài đặt ứng dụng".</p>`;
+  }
+  if(platform !== 'android'){
+    html += `<p><b style="color:var(--text)">Trên iPhone (Safari):</b><br>Từ iOS 26: nhấn "•••" → Chia sẻ → "Thêm vào Màn hình chính". Bản cũ hơn: nhấn thẳng nút Chia sẻ.</p>`;
+  }
+  html += `<p><b style="color:var(--text)">Muốn có file .apk thật?</b><br>Bạn có thể dùng công cụ miễn phí như PWABuilder.com — chỉ cần dán địa chỉ web của app này vào là họ tự đóng gói ra file .apk cài trực tiếp.</p>`;
+  html += `<button class="btn-secondary" onclick="closeAllSheets()">Đã hiểu</button>`;
+  body.innerHTML = html;
+}
+
+/* ================= INIT ================= */
+function init(){
+  applyTheme();
+  generateDueRecurring();
+  renderAll();
+  setupMultiTabWarning();
+  setupPwaInstall();
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.register('service-worker.js').catch(()=>{});
+  }
+}
+init();
+</script>
+</body>
+</html>
