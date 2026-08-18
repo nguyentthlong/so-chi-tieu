@@ -985,7 +985,11 @@ function renderTxRowHTML(t, showDate){
   const c = getCat(t.categoryId);
   const sign = t.type==='income' ? '+' : '-';
   const dateStr = formatDateVN(t.date);
-  const subtitle = t.note ? (showDate ? `${esc(t.note)} · ${dateStr}` : esc(t.note)) : dateStr;
+  // Date goes FIRST when both are shown: the row uses white-space:nowrap +
+  // ellipsis, which truncates from the end — a long note would otherwise
+  // push the date past the visible/truncated portion, silently reintroducing
+  // the exact "date disappears" bug via truncation instead of the ternary.
+  const subtitle = t.note ? (showDate ? `${dateStr} · ${esc(t.note)}` : esc(t.note)) : dateStr;
   return `<div class="tx-item" data-id="${esc(t.id)}">
     <div class="tx-icon" style="background:${esc(c.color)}22; color:${esc(c.color)}">${esc(c.icon)}</div>
     <div class="tx-info">
