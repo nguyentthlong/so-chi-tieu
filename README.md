@@ -16,7 +16,13 @@
 
 ## Cài lên điện thoại
 
-Mở link https://nguyentthlong.github.io/so-chi-tieu/ bằng trình duyệt trên điện thoại, sau đó:
+Thêm biểu tượng app vào màn hình chính điện thoại — mở nhanh như app thật, dùng được cả khi mất mạng.
+
+Mở link https://nguyentthlong.github.io/so-chi-tieu/ bằng trình duyệt trên điện thoại.
+
+**Cách nhanh:** vào **Cài đặt → Cài app lên máy → Thêm vào Màn hình chính** trong app — trên Android (trình duyệt hỗ trợ) sẽ cài thẳng chỉ với 1 chạm; trên iPhone, Apple không cho phép cài tự động nên app sẽ chỉ đúng bước cần bấm thay vì bạn phải tự mò.
+
+**Hoặc làm thủ công:**
 
 **Android (Chrome)**
 1. Nhấn menu ⋮ ở góc trên
@@ -26,9 +32,9 @@ Mở link https://nguyentthlong.github.io/so-chi-tieu/ bằng trình duyệt tr�
 1. Từ iOS 26: nhấn "•••" cạnh thanh địa chỉ trước, rồi chọn Chia sẻ. Bản cũ hơn: nhấn thẳng nút Chia sẻ (hình vuông mũi tên lên)
 2. Chọn "Thêm vào Màn hình chính"
 
-Sau khi cài, app có icon riêng trên màn hình chính và dùng được cả khi mất mạng. Bản cập nhật mới của app có thể cần mở lại app 2 lần mới thấy, do cơ chế cache ngoại tuyến.
+Bản cập nhật mới của app có thể cần mở lại app 2 lần mới thấy, do cơ chế cache ngoại tuyến.
 
-> Các bước trên chỉ hoạt động khi mở qua link `https://...` ở trên — sẽ không hiện ra nếu bạn tải file `so-chi-tieu.html` về máy rồi mở trực tiếp.
+> Chỉ hoạt động khi mở qua link `https://...` ở trên — sẽ không hiện ra nếu bạn tải file `so-chi-tieu.html` về máy rồi mở trực tiếp.
 
 ## Dữ liệu của bạn
 

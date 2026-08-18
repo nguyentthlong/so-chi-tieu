@@ -536,6 +536,9 @@ button{font-family:inherit;}
     </div>
 
     <div class="section-head"><h2>Cài app lên máy</h2></div>
+    <p style="padding:0 20px; margin:0 0 14px 0; font-size:13px; color:var(--text-muted); line-height:1.5;">
+      Thêm biểu tượng app vào màn hình chính điện thoại — mở nhanh như app thật, dùng được cả khi mất mạng.
+    </p>
     <div class="settings-group">
       <div class="settings-row" onclick="showInstallHint()">
         <div class="ico">📲</div>
@@ -959,7 +962,7 @@ function renderDashboard(){
   // — e.g. CDN blocked — can never prevent this from showing)
   const recentList = document.getElementById('recentTxList');
   const recent = [...transactions].sort((a,b)=> parseYMD(b.date)-parseYMD(a.date) || b.createdAt-a.createdAt).slice(0,6);
-  recentList.innerHTML = recent.length ? recent.map(renderTxRowHTML).join('') : `<div class="no-data"><div class="em">🧾</div><p>Chưa có giao dịch nào.<br>Nhấn nút + để thêm giao dịch đầu tiên.</p></div>`;
+  recentList.innerHTML = recent.length ? recent.map(t=>renderTxRowHTML(t, true)).join('') : `<div class="no-data"><div class="em">🧾</div><p>Chưa có giao dịch nào.<br>Nhấn nút + để thêm giao dịch đầu tiên.</p></div>`;
   attachTxRowEvents(recentList);
 
   try{
@@ -973,14 +976,21 @@ function renderDashboard(){
   }catch(e){ console.warn('Chart render skipped:', e); }
 }
 
-function renderTxRowHTML(t){
+// showDate forces the date into the subtitle alongside any note. Needed by
+// the Dashboard's "recent transactions" list, which is a flat feed spanning
+// multiple days with no date-group header — without this, a transaction
+// with a note showed no date anywhere on screen. The Transactions screen
+// already renders a date header per group, so it leaves showDate off there.
+function renderTxRowHTML(t, showDate){
   const c = getCat(t.categoryId);
   const sign = t.type==='income' ? '+' : '-';
+  const dateStr = formatDateVN(t.date);
+  const subtitle = t.note ? (showDate ? `${esc(t.note)} · ${dateStr}` : esc(t.note)) : dateStr;
   return `<div class="tx-item" data-id="${esc(t.id)}">
     <div class="tx-icon" style="background:${esc(c.color)}22; color:${esc(c.color)}">${esc(c.icon)}</div>
     <div class="tx-info">
       <div class="cat">${esc(c.name)}</div>
-      <div class="note">${t.note ? esc(t.note) : formatDateVN(t.date)}</div>
+      <div class="note">${subtitle}</div>
     </div>
     <div class="tx-amt ${t.type==='income'?'in':'out'}">${sign}${fmtVND(t.amount)}</div>
   </div>`;
