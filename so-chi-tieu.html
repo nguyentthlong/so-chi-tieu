@@ -1780,6 +1780,13 @@ function detectInstallPlatform(){
   const ua = navigator.userAgent || '';
   const isStandalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
   if(isStandalone) return 'installed';
+  // Samsung Internet's own WebAPK minting currently ships an outdated
+  // targetSdkVersion, so Google Play Protect blocks the install with a
+  // "built for an older Android version" warning — a bug on Samsung's side,
+  // unrelated to this app. Checked before the generic 'android' case so we
+  // steer around it instead of sending users into the real install prompt,
+  // which would just trigger the same broken WebAPK path.
+  if(/SamsungBrowser/.test(ua)) return 'samsung-internet';
   if(/iPhone|iPad|iPod/.test(ua)) return 'ios';
   if(/Android/.test(ua)) return 'android';
   return 'unknown';
@@ -1815,6 +1822,17 @@ function renderInstallSheet(){
     body.innerHTML = `<p style="color:var(--text)">✅ Bạn đã cài app này rồi — mở lại từ biểu tượng trên màn hình chính.</p>`;
     return;
   }
+  if(platform === 'samsung-internet'){
+    // Hardcoded, not location.href: this app is only ever hosted at one
+    // official URL, and location.href can be messy in contexts that don't
+    // matter for a real user (e.g. a data: URL while testing locally) —
+    // no reason to risk showing that instead of the one link that matters.
+    body.innerHTML = `<p style="color:var(--text)">⚠️ Trình duyệt Samsung Internet đang có lỗi khiến Google Play Protect chặn cài đặt (báo "xây dựng cho phiên bản Android cũ") — lỗi từ Samsung, không phải từ app này.</p>
+      <p style="color:var(--text)">Hãy mở link này bằng <b>Chrome</b> rồi cài lại:</p>
+      <p style="color:var(--text-muted); font-size:12px; word-break:break-all;">https://nguyentthlong.github.io/so-chi-tieu/</p>
+      <button class="btn-secondary" onclick="closeAllSheets()">Đã hiểu</button>`;
+    return;
+  }
   if(deferredInstallPrompt){
     body.innerHTML = `
       <p style="color:var(--text)">Bấm nút bên dưới để cài app vào máy.</p>
@@ -1825,18 +1843,13 @@ function renderInstallSheet(){
   }
   // Fallback: manual steps, narrowed to the detected platform when known —
   // shows both (same as before this feature existed) when platform is 'unknown'.
-  // Plain --text, not --gold: gold-on-white in light mode is ~2.4:1 contrast
-  // (WCAG AA needs 4.5:1 for text this size) — near-unreadable. The ⚠️ carries
-  // the "pay attention" signal instead, matching how toasts already flag
-  // warnings elsewhere in the app.
-  let html = `<p><b style="color:var(--text)">⚠️ Lưu ý:</b> Chỉ hoạt động khi mở qua địa chỉ https://, không phải mở file trực tiếp.</p>`;
+  let html = '';
   if(platform !== 'ios'){
     html += `<p><b style="color:var(--text)">Trên Android (Chrome):</b><br>Menu ⋮ → "Thêm vào Màn hình chính" / "Cài đặt ứng dụng".</p>`;
   }
   if(platform !== 'android'){
     html += `<p><b style="color:var(--text)">Trên iPhone (Safari):</b><br>Từ iOS 26: nhấn "•••" → Chia sẻ → "Thêm vào Màn hình chính". Bản cũ hơn: nhấn thẳng nút Chia sẻ.</p>`;
   }
-  html += `<p><b style="color:var(--text)">Muốn có file .apk thật?</b><br>Bạn có thể dùng công cụ miễn phí như PWABuilder.com — chỉ cần dán địa chỉ web của app này vào là họ tự đóng gói ra file .apk cài trực tiếp.</p>`;
   html += `<button class="btn-secondary" onclick="closeAllSheets()">Đã hiểu</button>`;
   body.innerHTML = html;
 }
