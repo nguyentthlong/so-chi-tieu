@@ -106,7 +106,7 @@ button{font-family:inherit;}
 }
 .topbar h1{ font-family:var(--font-display); font-size:22px; font-weight:800; margin:0; }
 .icon-btn{
-  width:40px; height:40px; border-radius:50%; border:none; background:var(--surface);
+  width:40px; height:40px; padding:0; border-radius:50%; border:none; background:var(--surface);
   display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--text);
   box-shadow:0 2px 8px rgba(0,0,0,0.06);
 }
@@ -181,6 +181,14 @@ button{font-family:inherit;}
 
 /* ---------- Filter bar ---------- */
 .filter-bar{ display:flex; gap:8px; padding:0 20px 4px 20px; overflow-x:auto; }
+/* Segmented control for the type filter (Tất cả/Thu nhập/Chi tiêu): a solid
+   pill container with equal-width segments, same shape language as
+   .type-toggle. Deliberately a different silhouette from the .chip row of
+   category filters below it — same button styling for both made "which
+   row filters by what" hard to tell apart at a glance. */
+.segment-toggle{ display:flex; background:var(--surface-2); border-radius:999px; padding:4px; margin:0 20px 10px 20px; gap:2px; }
+.segment-toggle button{ flex:1; border:none; background:none; padding:8px 0; border-radius:999px; font-weight:600; font-size:12.5px; color:var(--text-muted); cursor:pointer; white-space:nowrap; }
+.segment-toggle button.active{ background:var(--primary); color:#fff; }
 .chip{
   flex-shrink:0; padding:7px 14px; border-radius:999px; border:1px solid var(--border);
   background:var(--surface); color:var(--text-muted); font-size:12.5px; font-weight:600; cursor:pointer;
@@ -189,10 +197,58 @@ button{font-family:inherit;}
 .chip.active{ background:var(--primary); border-color:var(--primary); color:#fff; }
 .search-box{ margin:10px 20px 8px 20px; position:relative; }
 .search-box input{
-  width:100%; padding:12px 14px 12px 40px; border-radius:var(--radius-md); border:1px solid var(--border);
+  width:100%; padding:12px 40px 12px 40px; border-radius:var(--radius-md); border:1px solid var(--border);
   background:var(--surface); color:var(--text); font-size:14px; outline:none;
 }
-.search-box svg{ position:absolute; left:13px; top:50%; transform:translateY(-50%); width:16px; height:16px; color:var(--text-muted); }
+/* `>` (direct child), not a descendant selector: this rule is only meant for
+   the search (magnifying-glass) icon, which sits directly inside .search-box.
+   A plain `.search-box svg` also matched the calendar icon nested two levels
+   deeper inside .date-filter-btn — forcing it into position:absolute/left:13px
+   relative to the button (its nearest positioned ancestor) instead of letting
+   the button's own flex centering place it, and locking its color to
+   --text-muted instead of following the button's active/inactive color. */
+.search-box > svg{ position:absolute; left:13px; top:50%; transform:translateY(-50%); width:16px; height:16px; color:var(--text-muted); }
+/* Solid background even at rest (not just on :active/.active) — an icon
+   floating on `background:none` inside the search input reads as decoration,
+   not a button, until the user happens to tap it. padding:0 + border:none
+   reset the browser's default <button> padding (1px 6px), which is what was
+   throwing the icon off-center inside the circle. */
+.search-box .date-filter-btn{ position:absolute; right:6px; top:50%; transform:translateY(-50%); width:32px; height:32px; padding:0; border-radius:50%; border:none; background:var(--surface-2); color:var(--text); cursor:pointer; font-size:16px; display:flex; align-items:center; justify-content:center; }
+.search-box .date-filter-btn.active{ background:var(--primary); color:#fff; }
+.date-range-box{ display:none; margin:0 20px 10px 20px; padding:12px 14px; border-radius:var(--radius-md); background:var(--surface); box-shadow:0 3px 10px rgba(15,27,20,0.05); }
+/* align-items:center, not flex-end: the clear button has no label above it
+   like the two date fields do, so flex-end was pinning it to the bottom of
+   the row instead of lining it up with the inputs' vertical center. */
+.date-range-box.show{ display:flex; gap:10px; align-items:center; }
+.date-range-box .field{ flex:1; margin-bottom:0; }
+/* input[type=date]'s displayed format (mm/dd/yyyy vs dd/mm/yyyy) and its
+   calendar-icon color both follow the browser's own rendering — neither is
+   controllable with CSS/HTML, and the icon in particular often stays a fixed
+   dark color that goes near-invisible on a dark background. Fix: make the
+   real input fully invisible (opacity:0, not just color:transparent — that
+   only hides text, not every browser's icon/pseudo-elements) but keep it on
+   top so taps/clicks still hit it and open the native picker, then draw our
+   own always-legible dd/mm/yyyy + calendar icon underneath purely for display. */
+.date-input-wrap{ position:relative; }
+.date-input-wrap input[type=date]{ position:absolute; inset:0; width:100%; height:100%; opacity:0; margin:0; cursor:pointer; }
+.date-display{ display:flex; align-items:center; justify-content:space-between; gap:6px; padding:12px 14px; border-radius:var(--radius-md); border:1px solid var(--border); background:var(--surface-2); color:var(--text); font-size:14px; pointer-events:none; }
+.date-display.placeholder{ color:var(--text-muted); }
+.date-display svg{ width:15px; height:15px; flex-shrink:0; color:var(--text-muted); }
+/* Neutral grey, not red: red is reserved elsewhere in the app for actually
+   destructive actions (Settings › Xóa toàn bộ dữ liệu, which permanently
+   deletes data). Clearing a date filter loses nothing and is trivial to redo
+   — borrowing the "delete" color for it overstates the action and, sitting
+   right above the calendar toggle button, clashed with its neutral color.
+   Same size (32px) and same resting palette as .date-filter-btn so the two
+   read as one coherent pair instead of two unrelated button styles. */
+/* margin-top:21px: align-items:center on the row centers this button against
+   the *whole* .field column (label + input, 64px tall), but the label has no
+   visual counterpart here, so that left the button sitting ~10px above the
+   actual date boxes beside it. 21px (= label height + its margin-bottom)
+   nudges it back down so its center lines up with the visible date-display
+   boxes' center instead of the invisible label-inclusive column's center. */
+.date-range-box .clear-btn{ flex-shrink:0; width:32px; height:32px; margin-top:21px; background:var(--surface-2); color:var(--text-muted); box-shadow:none; }
+.date-range-box .clear-btn svg{ width:16px; height:16px; }
 
 /* ---------- Budget screen ---------- */
 .budget-item{ background:var(--surface); border-radius:var(--radius-md); padding:14px 16px; margin:0 20px 12px 20px; box-shadow:0 3px 10px rgba(15,27,20,0.05); cursor:pointer; }
@@ -349,22 +405,25 @@ button{font-family:inherit;}
 /* transform-only + short duration keeps this entirely on the GPU compositor
    (no layout/paint work), and :active only ever matches the one element
    actually being pressed — so this costs nothing even with 60+ rows on
-   screen. .fab already has its own transform (translateX, for centering),
-   so its :active has to repeat that alongside the scale instead of just
-   overriding it away. */
+   screen. .fab and .date-filter-btn already carry their own transform
+   (translateX / translateY, for centering) at rest, so their :active rules
+   have to repeat that alongside the scale instead of just overriding it
+   away — otherwise pressing them snaps the centering offset back to zero
+   and the button visibly jumps out of position. */
 .icon-btn, .link-btn, .tx-item, .chip, .settings-row, .cat-manage-item,
-.nav-btn, .type-toggle button, .cat-pick-item, .btn-primary, .btn-danger,
+.nav-btn, .type-toggle button, .segment-toggle button, .date-filter-btn, .cat-pick-item, .btn-primary, .btn-danger,
 .btn-secondary, .color-swatch, .emoji-picker span, .budget-item, .fab{
   transition:transform .12s ease;
 }
 .icon-btn:active, .link-btn:active, .tx-item:active, .chip:active,
 .settings-row:active, .cat-manage-item:active, .nav-btn:active,
-.type-toggle button:active, .cat-pick-item:active, .btn-primary:active,
+.type-toggle button:active, .segment-toggle button:active, .cat-pick-item:active, .btn-primary:active,
 .btn-danger:active, .btn-secondary:active, .color-swatch:active,
 .emoji-picker span:active, .budget-item:active{
   transform:scale(.96);
 }
 .fab:active{ transform:translateX(-50%) scale(.94); }
+.date-filter-btn:active{ transform:translateY(-50%) scale(.96); }
 </style>
 </head>
 <body>
@@ -422,11 +481,39 @@ button{font-family:inherit;}
     <div class="search-box">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
       <input type="text" id="searchInput" placeholder="Tìm theo ghi chú, danh mục..." oninput="renderTransactionsScreen()">
+      <button class="date-filter-btn" id="dateFilterBtn" onclick="toggleTxDateBox()" title="Lọc theo khoảng ngày">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="17" height="17"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+      </button>
     </div>
-    <div class="filter-bar" id="typeFilterBar">
-      <button class="chip active" data-f="all" onclick="setTypeFilter('all')">Tất cả</button>
-      <button class="chip" data-f="income" onclick="setTypeFilter('income')">Thu nhập</button>
-      <button class="chip" data-f="expense" onclick="setTypeFilter('expense')">Chi tiêu</button>
+    <div class="date-range-box" id="txDateRangeBox">
+      <div class="field">
+        <label>Từ ngày</label>
+        <div class="date-input-wrap">
+          <input type="date" id="txDateFrom" onchange="applyTxDateFilter()">
+          <div class="date-display placeholder" id="txDateFromDisplay">
+            <span>dd/mm/yyyy</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+          </div>
+        </div>
+      </div>
+      <div class="field">
+        <label>Đến ngày</label>
+        <div class="date-input-wrap">
+          <input type="date" id="txDateTo" onchange="applyTxDateFilter()">
+          <div class="date-display placeholder" id="txDateToDisplay">
+            <span>dd/mm/yyyy</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+          </div>
+        </div>
+      </div>
+      <button class="icon-btn clear-btn" onclick="clearTxDateFilter()" title="Bỏ lọc ngày">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="segment-toggle" id="typeFilterBar">
+      <button class="active" data-f="all" onclick="setTypeFilter('all')">Tất cả</button>
+      <button data-f="income" onclick="setTypeFilter('income')">Thu nhập</button>
+      <button data-f="expense" onclick="setTypeFilter('expense')">Chi tiêu</button>
     </div>
     <div class="filter-bar" id="catFilterBar"></div>
     <div class="tx-list" id="fullTxList" style="margin-top:6px;"></div>
@@ -1014,7 +1101,7 @@ let typeFilter = 'all';
 let catFilter = null;
 function setTypeFilter(f){
   typeFilter = f; catFilter = null;
-  document.querySelectorAll('#typeFilterBar .chip').forEach(c=>c.classList.toggle('active', c.dataset.f===f));
+  document.querySelectorAll('#typeFilterBar button').forEach(c=>c.classList.toggle('active', c.dataset.f===f));
   renderTransactionsScreen();
 }
 function renderCatFilterBar(){
@@ -1025,6 +1112,51 @@ function renderCatFilterBar(){
 }
 function setCatFilter(id){
   catFilter = (catFilter===id) ? null : id;
+  renderTransactionsScreen();
+}
+let txDateFrom = null, txDateTo = null;
+function toggleTxDateBox(){
+  const box = document.getElementById('txDateRangeBox');
+  box.classList.toggle('show');
+}
+// The real <input type=date> is invisible (see .date-input-wrap CSS) — this
+// paints the dd/mm/yyyy text (or the "dd/mm/yyyy" placeholder) that's
+// actually seen, since the native input's own displayed format follows the
+// device's locale and can't be controlled from here.
+function updateTxDateDisplay(id, value){
+  const el = document.getElementById(id);
+  const span = el.querySelector('span');
+  if(value){ span.textContent = formatDateVN(value); el.classList.remove('placeholder'); }
+  else{ span.textContent = 'dd/mm/yyyy'; el.classList.add('placeholder'); }
+}
+function updateTxDateConfirmLabels(){
+  updateTxDateDisplay('txDateFromDisplay', txDateFrom);
+  updateTxDateDisplay('txDateToDisplay', txDateTo);
+}
+function applyTxDateFilter(){
+  const s = document.getElementById('txDateFrom').value || null;
+  const e = document.getElementById('txDateTo').value || null;
+  // Same guard as the Stats screen's custom range: reject silently swapping
+  // to an invalid range instead of reverting the inputs, which previously
+  // left the displayed dates out of sync with what was actually filtered.
+  if(s && e && s > e){
+    showToast('Ngày bắt đầu phải trước ngày kết thúc');
+    document.getElementById('txDateFrom').value = txDateFrom || '';
+    document.getElementById('txDateTo').value = txDateTo || '';
+    updateTxDateConfirmLabels();
+    return;
+  }
+  txDateFrom = s; txDateTo = e;
+  document.getElementById('dateFilterBtn').classList.toggle('active', !!(txDateFrom || txDateTo));
+  updateTxDateConfirmLabels();
+  renderTransactionsScreen();
+}
+function clearTxDateFilter(){
+  txDateFrom = null; txDateTo = null;
+  document.getElementById('txDateFrom').value = '';
+  document.getElementById('txDateTo').value = '';
+  document.getElementById('dateFilterBtn').classList.remove('active');
+  updateTxDateConfirmLabels();
   renderTransactionsScreen();
 }
 // Transactions are paginated: rendering every row at once made the screen
@@ -1044,6 +1176,8 @@ function renderTransactionsScreen(keepPage){
   if(typeFilter!=='all') list = list.filter(t=>t.type===typeFilter);
   if(catFilter) list = list.filter(t=>t.categoryId===catFilter);
   if(q) list = list.filter(t=> (t.note||'').toLowerCase().includes(q) || getCat(t.categoryId).name.toLowerCase().includes(q));
+  if(txDateFrom) list = list.filter(t=>t.date >= txDateFrom);
+  if(txDateTo) list = list.filter(t=>t.date <= txDateTo);
   list.sort((a,b)=> parseYMD(b.date)-parseYMD(a.date) || b.createdAt-a.createdAt);
 
   const container = document.getElementById('fullTxList');
