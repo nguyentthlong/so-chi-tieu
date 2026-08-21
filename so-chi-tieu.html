@@ -905,14 +905,35 @@ function showToast(msg){
 }
 
 /* ================= SHEETS ================= */
+/* Screens/sheets are shown and hidden purely with CSS classes — the app
+   never touches the URL or browser history. On Android that means the
+   hardware/gesture Back button has no in-app history entry to consume, so
+   it falls straight through to closing the whole PWA, even just to dismiss
+   a sheet or the keyboard. Pushing one history entry while a sheet is open
+   gives Back something of ours to consume first: popstate closes the sheet
+   instead of the browser closing the app. Sheets never nest in this app
+   (nothing opens a second sheet from within one already open), so tracking
+   a single pushed entry — not a real stack — is enough. */
+let sheetHistoryPushed = false;
 function openSheet(id){
   document.getElementById('overlay').classList.add('show');
   document.getElementById(id).classList.add('show');
+  history.pushState({sheet:true}, '');
+  sheetHistoryPushed = true;
 }
 function closeAllSheets(){
+  // Route every close through history.back() so Back and the X/save/overlay
+  // click end up doing the exact same thing — popstate below is the only
+  // place that actually hides the sheet, so the two paths can't drift apart.
+  if(sheetHistoryPushed){ history.back(); }
+  else{ hideSheets(); }
+}
+function hideSheets(){
   document.getElementById('overlay').classList.remove('show');
   document.querySelectorAll('.sheet').forEach(s=>s.classList.remove('show'));
+  sheetHistoryPushed = false;
 }
+window.addEventListener('popstate', hideSheets);
 function showInstallHint(){ renderInstallSheet(); openSheet('installSheet'); }
 
 /* ================= MONTH HELPERS ================= */
